@@ -93,6 +93,7 @@ CampaignAvailableDesignation.belongsTo(Designation, { foreignKey: 'designationId
 // ========== STAFF USER RELATIONSHIPS ==========
 // StaffUser belongsTo relationships
 StaffUser.belongsTo(Organization, { foreignKey: 'organizationId', as: 'organization' });
+StaffUser.hasMany(Organization, { foreignKey: 'id', as: 'organizations' });
 
 // ========== ORGANIZATION PAGE RELATIONSHIPS ==========
 // OrganizationPage belongsTo relationships

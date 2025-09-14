@@ -19,7 +19,6 @@ export class CrmOrganizationRepository {
    * @param organizationData - The data for the new organization.
    */
   public async create(organizationData: {
-    id: string;
     name: string;
     subdomain: string;
     stripeAccountId?: string;

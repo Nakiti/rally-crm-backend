@@ -10,7 +10,9 @@ interface OrganizationAttributes {
   settings?: object;
 }
 
-class Organization extends Model<OrganizationAttributes> implements OrganizationAttributes {
+type OrganizationCreationAttributes = Optional<OrganizationAttributes, 'id'>;
+
+class Organization extends Model<OrganizationAttributes, OrganizationCreationAttributes> implements OrganizationAttributes {
   public id!: string;
   public name!: string;
   public subdomain!: string;

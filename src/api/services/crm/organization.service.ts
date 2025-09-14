@@ -25,14 +25,9 @@ export const createOrganization = async (data: CreateOrganizationData): Promise<
         // Create repository instance without user context for creation
         const orgRepo = new CrmOrganizationRepository();
         
-        // Generate UUID for the new organization
-        const organizationData = {
-            id: require('crypto').randomUUID(),
-            ...data
-        };
 
         // Use repository to create organization
-        const organization = await orgRepo.create(organizationData);
+        const organization = await orgRepo.create(data);
         return organization;
     } catch (error) {
         if (error instanceof ApiError) {

@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { StaffUser } from '../../../models';
 import { 
   createOrganization, 
   getOrganizationForStaff, 
@@ -10,17 +9,13 @@ import {
 } from '../../services/crm/organization.service';
 import { ApiError } from '../../../utils/ApiError';
 
-// Extend Request interface to include user
-interface AuthenticatedRequest extends Request {
-  user: StaffUser;
-}
 
 /**
  * Create a new organization
  * POST /api/organizations
  */
 export const createNewOrganization = async (
-  req: AuthenticatedRequest, 
+  req: Request, 
   res: Response, 
   next: NextFunction
 ): Promise<void> => {
@@ -52,7 +47,7 @@ export const createNewOrganization = async (
  * GET /api/organizations/me
  */
 export const getMyOrganization = async (
-  req: AuthenticatedRequest, 
+  req: Request, 
   res: Response, 
   next: NextFunction
 ): Promise<void> => {
@@ -79,7 +74,7 @@ export const getMyOrganization = async (
  * GET /api/organizations/:id
  */
 export const getOrganization = async (
-  req: AuthenticatedRequest, 
+  req: Request, 
   res: Response, 
   next: NextFunction
 ): Promise<void> => {
@@ -107,7 +102,7 @@ export const getOrganization = async (
  * PUT /api/organizations/:id
  */
 export const updateOrganization = async (
-  req: AuthenticatedRequest, 
+  req: Request, 
   res: Response, 
   next: NextFunction
 ): Promise<void> => {
@@ -146,7 +141,7 @@ export const updateOrganization = async (
  * DELETE /api/organizations/:id
  */
 export const deleteOrganization = async (
-  req: AuthenticatedRequest, 
+  req: Request, 
   res: Response, 
   next: NextFunction
 ): Promise<void> => {
@@ -173,7 +168,7 @@ export const deleteOrganization = async (
  * GET /api/organizations
  */
 export const getAllOrganizations = async (
-  req: AuthenticatedRequest, 
+  req: Request, 
   res: Response, 
   next: NextFunction
 ): Promise<void> => {
