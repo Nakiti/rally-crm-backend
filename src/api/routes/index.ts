@@ -1,18 +1,14 @@
 import { Router } from 'express';
-import organizationRoutes from "./crm/organization.routes"
+import crmOrganizationRoutes from "./crm/organization.routes"
 // import campaignRoutes from './campaign.routes';
 // import authRoutes from './auth.routes';
 // ... import other route files as you create them
 
-const router = Router();
+const mainCrmRouter = Router();
+mainCrmRouter.use("/organization", crmOrganizationRoutes)
 
-// Any request starting with /api/campaigns will be handled by the campaignRoutes file.
-// router.use('/campaigns', campaignRoutes);
 
-// // Any request starting with /api/auth will be handled by the authRoutes file.
-// router.use('/auth', authRoutes);
-router.use("/organization", organizationRoutes)
+const mainPublicRouter = Router()
+mainPublicRouter.use("/organization", null)
 
-// ... and so on for other resources
-
-export default router;
+export { mainCrmRouter, mainPublicRouter }

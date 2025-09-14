@@ -1,30 +1,30 @@
 import { DataTypes, DATE, Model, Optional, UUIDV4 } from 'sequelize';
 import sequelize from '../config/database';
 
-interface StaffUserAttributes {
+interface EventAttributes {
     id: string;
     organizationId: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    passwordHash: string;
-    role: string;
+    title: string;
+    description: string;
+    location: string;
+    eventDate: Date;
+    isActive: boolean
 }
 
-class StaffUser extends Model<StaffUserAttributes> implements StaffUserAttributes {
+class Event extends Model<EventAttributes> implements EventAttributes {
     public id!: string;
     public organizationId!: string;
-    public firstName!: string;
-    public lastName!: string;
-    public email!: string;
-    public passwordHash!: string;
-    public role!: string;
+    public title!: string;
+    public description!: string;
+    public location!: string;
+    public eventDate!: Date;
+    public isActive!: boolean
 
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
 
-StaffUser.init({
+Event.init({
     id: {
         type: DataTypes.UUID,
         defaultValue: UUIDV4,
@@ -38,31 +38,30 @@ StaffUser.init({
             key: "id"
         }
     },
-    firstName: {
-        type: new DataTypes.STRING(255),
-        allowNull: false
-    },
-    lastName: {
+    title: {
         type: DataTypes.STRING(255),
         allowNull: false
     },
-    email: {
+    description: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    location: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        unique: true
     },
-    passwordHash: {
-        type: DataTypes.STRING,
-        allowNull: false
+    eventDate: {
+        type: DataTypes.TIME,
+        allowNull: true
     },
-    role: {
-        type: DataTypes.ENUM,
+    isActive: {
+        type: DataTypes.BOOLEAN,
         allowNull: false,
-        defaultValue: 'editor'
+        defaultValue: false
     }
 }, {
-    tableName: "staff_users",
+    tableName: "events",
     sequelize
 })
 
-export {StaffUser}
+export {Event}
