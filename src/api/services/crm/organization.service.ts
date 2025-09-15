@@ -1,7 +1,7 @@
 import { Organization } from '../../../models/index.js';
 import { ApiError } from "../../../utils/ApiError.js"
 import { CrmOrganizationRepository } from '../../repositories/crm/organization.repository.js';
-import type { StaffSession } from '../../types/express.types.js';
+import type { StaffSession } from '../../types/session.types.js';
 
 interface CreateOrganizationData {
     name: string;

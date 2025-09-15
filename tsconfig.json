@@ -9,6 +9,7 @@
     "target": "ES2022",
     "moduleResolution": "node",
     "types": ["node"],
+    "typeRoots": ["./node_modules/@types", "./src/@types"],
 
     // ES Module Support
     "allowSyntheticDefaultImports": true,

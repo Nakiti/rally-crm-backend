@@ -11,16 +11,16 @@ const router = Router();
 // POST /api/organizations
 router.post('/', validate(createOrganizationSchema), organizationController.createNewOrganization);
 
-// Route to get organization by ID (with authorization)
-// GET /api/organizations/:id
-router.get('/:id', isStaffAuthenticated, hasRole(['admin', 'editor']), organizationController.getOrganization);
+// // Route to get organization by ID (with authorization)
+// // GET /api/organizations/:id
+// router.get('/:id', isStaffAuthenticated, hasRole(['admin', 'editor']), organizationController.getOrganization);
 
-// Route to update organization by ID (with authorization)
-// PUT /api/organizations/:id
-router.put('/:id', isStaffAuthenticated, hasRole(['admin', 'editor']), validate(updateOrganizationSchema), organizationController.updateOrganization);
+// // Route to update organization by ID (with authorization)
+// // PUT /api/organizations/:id
+// router.put('/:id', isStaffAuthenticated, hasRole(['admin', 'editor']), validate(updateOrganizationSchema), organizationController.updateOrganization);
 
-// Route to delete organization by ID (with authorization)
-// DELETE /api/organizations/:id
-router.delete('/:id', isStaffAuthenticated, hasRole(['admin']), organizationController.deleteOrganization);
+// // Route to delete organization by ID (with authorization)
+// // DELETE /api/organizations/:id
+// router.delete('/:id', isStaffAuthenticated, hasRole(['admin']), organizationController.deleteOrganization);
 
 export default router;

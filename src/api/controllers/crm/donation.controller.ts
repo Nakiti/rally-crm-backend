@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { CrmDonationService } from '../../services/crm/donation.service.js';
 import { ApiError } from '../../../utils/ApiError.js';
-import type { AuthenticatedRequest } from '../../types/express.types.js';
+// import type { AuthenticatedRequest } from '../../types/session.types.js';
 
 /**
  * Get all donations for the organization with optional filtering and pagination
@@ -39,7 +39,7 @@ export const getDonations = async (
 
     // Create service instance and call the service
     const donationService = new CrmDonationService();
-    const result = await donationService.getDonationsForOrg((req as AuthenticatedRequest).user, filters);
+    const result = await donationService.getDonationsForOrg((req).user, filters);
     
     res.status(200).json({
       success: true,
@@ -75,7 +75,7 @@ export const getDonationDetails = async (
 
     // Create service instance and call the service
     const donationService = new CrmDonationService();
-    const donation = await donationService.getDonationDetails((req as AuthenticatedRequest).user, id);
+    const donation = await donationService.getDonationDetails((req).user, id);
     
     res.status(200).json({
       success: true,

@@ -52,7 +52,7 @@ StaffRole.init({
         }
     },
     role: {
-        type: DataTypes.ENUM,
+        type: DataTypes.ENUM('admin', 'editor'),
         allowNull: false,
         defaultValue: 'editor'
     }

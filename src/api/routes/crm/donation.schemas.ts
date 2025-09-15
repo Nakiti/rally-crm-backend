@@ -54,3 +54,4 @@ export const getDonationDetailsSchema = z.object({
       .uuid('Donation ID must be a valid UUID')
   })
 });
+

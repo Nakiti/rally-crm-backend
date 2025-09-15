@@ -1,6 +1,6 @@
 import { Donation, Campaign, DonorAccount, Designation, DonationAnswer, CampaignQuestion } from '../../../models/index.js';
 import { ApiError } from '../../../utils/ApiError.js';
-import type { StaffSession } from '../../types/express.types.js';
+import type { StaffSession } from '../../types/session.types.js';
 import { Op } from 'sequelize';
 
 // Interface for pagination filters

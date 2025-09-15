@@ -2,7 +2,7 @@ import type{ Response, NextFunction, Request } from 'express';
 import jwt from 'jsonwebtoken'
 import { StaffAccount, StaffRole } from '../../models/index.js';
 import { ApiError } from '../../utils/ApiError.js';
-import type { AuthenticatedRequest, StaffRoleEnum } from '../types/express.types.js';
+import type { StaffRoleEnum } from '../types/session.types.js';
 
 // Define a type for the decoded JWT payload
 interface StaffJwtPayload {
@@ -56,7 +56,7 @@ export const isStaffAuthenticated = async (
     // 5. Attach a rich, combined user object to the request.
     // This gives our controllers all the information they need:
     // the user's global identity AND their session-specific role and organization.
-    (req as AuthenticatedRequest).user = {
+    (req).user = {
       id: staffRole.staffAccountId,
       firstName: staffRole.staffAccount?.firstName,
       lastName: staffRole.staffAccount?.lastName,

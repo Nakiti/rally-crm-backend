@@ -1,6 +1,6 @@
 import { PublicDonorRepository } from '../../repositories/public/donor.repository.js';
 import { ApiError } from '../../../utils/ApiError.js';
-import type { DonorSession } from '../../types/express.types.js';
+import type { DonorSession } from '../../types/session.types.js';
 
 // Public-safe DTO interfaces for donation history
 interface PublicDonationDTO {

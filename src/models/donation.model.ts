@@ -88,7 +88,7 @@ Donation.init({
         unique: true
     },
     status: {
-        type: DataTypes.ENUM,
+        type: DataTypes.ENUM('pending', 'completed', 'failed'),
         allowNull: true
     }
 }, {

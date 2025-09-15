@@ -1,6 +1,6 @@
 import { Designation } from '../../../models/index.js';
 import { ApiError } from '../../../utils/ApiError.js';
-import type { StaffSession } from '../../types/express.types.js';
+import type { StaffSession } from '../../types/session.types.js';
 
 // Interface for designation creation data
 interface DesignationCreationData {

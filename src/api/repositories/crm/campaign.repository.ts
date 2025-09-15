@@ -1,6 +1,7 @@
 import { Campaign } from '../../../models/index.js';
 import { ApiError } from '../../../utils/ApiError.js';
-import type { StaffSession } from '../../types/express.types.js';
+import type { StaffSession } from '../../types/session.types.js';
+import { Op } from 'sequelize';
 
 /**
  * A repository for handling all database operations for Campaigns
@@ -145,7 +146,7 @@ export class CrmCampaignRepository {
           where: {
             slug: updateData.slug,
             organizationId: this.user.organizationId,
-            id: { [require('sequelize').Op.ne]: id }
+            id: { [Op.ne]: id }
           }
         });
 

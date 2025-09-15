@@ -2,7 +2,7 @@ import type { Response, NextFunction, Request } from 'express';
 import jwt from 'jsonwebtoken';
 import { DonorAccount } from '../../models/index.js';
 import { ApiError } from '../../utils/ApiError.js';
-import type { AuthenticatedDonorRequest } from '../types/express.types.js';
+import type { AuthenticatedDonorRequest } from '../types/session.types.js';
 
 // Define a type for the decoded JWT payload
 interface DonorJwtPayload {
@@ -48,7 +48,7 @@ export const isDonorAuthenticated = async (
     }
 
     // 5. Attach the DonorSession object to req.user
-    (req as AuthenticatedDonorRequest).user = {
+    (req).user = {
       donorAccountId: donorAccount.id,
       organizationId: donorAccount.organizationId,
     };

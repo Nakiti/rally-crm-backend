@@ -1,6 +1,7 @@
 import { Organization } from '../../../models/index.js';
 import { ApiError } from '../../../utils/ApiError.js';
-import type { StaffSession } from '../../types/express.types.js';
+import type { StaffSession } from '../../types/session.types.js';
+import { Op } from 'sequelize';
 
 /**
  * A repository for handling all database operations for Organizations
@@ -91,7 +92,7 @@ export class CrmOrganizationRepository {
       const existingOrganization = await Organization.findOne({
         where: { 
           subdomain: updateData.subdomain,
-          id: { [require('sequelize').Op.ne]: id }
+          id: { [Op.ne]: id }
         }
       });
 

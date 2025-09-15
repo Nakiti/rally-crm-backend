@@ -4,7 +4,7 @@ import { Transaction } from 'sequelize';
 import sequelize from '../../../config/database.js';
 import { Organization, StaffAccount, StaffRole } from '../../../models/index.js';
 import { ApiError } from '../../../utils/ApiError.js';
-import type { StaffRoleEnum } from '../../types/express.types.js';
+import type { StaffRoleEnum } from '../../types/session.types.js';
 
 // Interface for signup request data
 export interface SignupData {

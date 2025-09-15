@@ -13,16 +13,16 @@ if (!process.env.DB_NAME || !process.env.DB_USER || !process.env.DB_HOST) {
 // This creates a connection pool that will be used by all models.
 const sequelize = new Sequelize(
   process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD || '', // Password can be optional
-  {
+  process.env.DB_USER, 
+  process.env.DB_PASSWORD,
+  { 
     host: process.env.DB_HOST,
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'development' ? console.log : false, // Log SQL queries in development
     pool: {
       max: 5,
       min: 0,
-      acquire: 30000,
+      acquire: 30000, 
       idle: 10000,
     },
   }
@@ -37,9 +37,9 @@ export const connectDb = async () => {
     await sequelize.authenticate();
     console.log('✅ Database connection has been established successfully.');
   } catch (error) {
-    console.error('❌ Unable to connect to the database:', error);
-    // Exit the process if we can't connect to the database, as the app is useless without it.
-    process.exit(1);
+    console.error('❌ Unable to connect to the database:');
+    // Re-throw the error to be caught by the server's startup logic
+    throw error;
   }
 };
 

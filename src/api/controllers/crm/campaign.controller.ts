@@ -8,7 +8,7 @@ import {
   getCampaignPageConfig as getCampaignPageConfigService,
   updateCampaignPageConfig as updateCampaignPageConfigService
 } from '../../services/crm/campaign.service.js';
-import type { AuthenticatedRequest } from '../../types/express.types.js';
+// import type { AuthenticatedRequest } from '../../types/express.types.js';
 import { ApiError } from '../../../utils/ApiError.js';
 
 /**
@@ -22,7 +22,7 @@ export const createCampaign = async (
 ): Promise<void> => {
   try {
     const campaignData = req.body;
-    const staffSession = (req as AuthenticatedRequest).user;
+    const staffSession = (req).user;
 
     const campaign = await createCampaignForStaff(campaignData, staffSession);
     
@@ -46,7 +46,7 @@ export const getCampaigns = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const staffSession = (req as AuthenticatedRequest).user;
+    const staffSession = (req).user;
 
     const campaigns = await getCampaignsForOrg(staffSession);
     
@@ -71,7 +71,7 @@ export const getCampaignById = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const staffSession = (req as AuthenticatedRequest).user;
+    const staffSession = (req).user;
     if (!id) {
         throw new ApiError(400, 'Campaign ID is required');
     }
@@ -102,7 +102,7 @@ export const updateCampaign = async (
   try {
     const { id } = req.params;
     const updateData = req.body;
-    const staffSession = (req as AuthenticatedRequest).user;
+    const staffSession = (req).user;
     if (!id) {
       throw new ApiError(400, 'Campaign ID is required');
     }
@@ -130,7 +130,7 @@ export const deleteCampaign = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const staffSession = (req as AuthenticatedRequest).user;
+    const staffSession = (req).user;
     if (!id) {
       throw new ApiError(400, 'Campaign ID is required');
     }
@@ -158,7 +158,7 @@ export const getCampaignPageConfig = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const staffSession = (req as AuthenticatedRequest).user;
+    const staffSession = (req).user;
     if (!id) {
       throw new ApiError(400, 'Campaign ID is required');
     }
@@ -187,7 +187,7 @@ export const updateCampaignPageConfig = async (
   try {
     const { id } = req.params;
     const { pageConfig } = req.body;
-    const staffSession = (req as AuthenticatedRequest).user;
+    const staffSession = (req).user;
     if (!id) {
       throw new ApiError(400, 'Campaign ID is required');
     }

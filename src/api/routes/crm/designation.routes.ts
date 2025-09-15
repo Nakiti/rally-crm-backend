@@ -45,3 +45,4 @@ router.put('/:id', isStaffAuthenticated, hasRole(['admin', 'editor']), validate(
 router.patch('/:id/archive', isStaffAuthenticated, hasRole(['admin']), validate(archiveDesignationSchema), archiveDesignation);
 
 export default router;
+

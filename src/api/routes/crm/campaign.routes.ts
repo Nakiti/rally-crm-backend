@@ -7,10 +7,10 @@ import {
   deleteCampaign,
   getCampaignPageConfig,
   updateCampaignPageConfig
-} from '../../../controllers/crm/campaign.controller.js';
-import { validate } from '../../../middleware/validate.js';
-import { isStaffAuthenticated } from '../../../middleware/isStaffAuthenticated.js';
-import { hasRole } from '../../../middleware/hasRole.js';
+} from '../../controllers/crm/campaign.controller.js';
+import { validate } from '../../middleware/validate.js';
+import { isStaffAuthenticated } from '../../middleware/isStaffAuthenticated.js';
+import { hasRole } from '../../middleware/hasRole.js';
 import {
   createCampaignSchema,
   updateCampaignSchema,

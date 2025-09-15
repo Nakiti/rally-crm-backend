@@ -129,3 +129,4 @@ export const updateDesignation = (staffSession: StaffSession, id: string, data: 
 
 export const archiveDesignation = (staffSession: StaffSession, id: string) =>
   crmDesignationService.archiveDesignation(staffSession, id);
+

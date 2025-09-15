@@ -52,3 +52,4 @@ export const archiveDesignationSchema = z.object({
     id: z.string().uuid('A valid designation ID is required')
   })
 });
+

@@ -1,7 +1,7 @@
 import type { Response, NextFunction, Request } from 'express';
 import { getDonationHistoryForDonor } from '../../services/public/donor.service.js';
-import type { AuthenticatedDonorRequest } from '../../types/express.types.js';
-import type { DonorSession } from '../../types/express.types.js';
+import type { AuthenticatedDonorRequest } from '../../types/session.types.js';
+import type { DonorSession } from '../../types/session.types.js';
 
 /**
  * Get donation history for the authenticated donor
