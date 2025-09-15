@@ -1,5 +1,7 @@
-import { DataTypes, DATE, Model, Optional, TEXT, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, TEXT, UUIDV4, type Optional } from 'sequelize';
+import sequelize from '../config/database.js';
+import type { Donation } from './donation.model.js';
+import type { CampaignQuestion } from './campaignQuestion.model.js';
 
 interface DonationAnswerAttributes {
     id: string;
@@ -8,7 +10,9 @@ interface DonationAnswerAttributes {
     answerValue: string;
 }
 
-class DonationAnswer extends Model<DonationAnswerAttributes> implements DonationAnswerAttributes {
+interface DonationAnswerCreationAttributes extends Optional<DonationAnswerAttributes, "id"> {}
+
+class DonationAnswer extends Model<DonationAnswerAttributes, DonationAnswerCreationAttributes> implements DonationAnswerAttributes {
     public id!: string;
     public donationId!: string;
     public questionId!: string;
@@ -16,6 +20,10 @@ class DonationAnswer extends Model<DonationAnswerAttributes> implements Donation
 
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
+
+    // Association properties
+    public donation?: Donation;
+    public question?: CampaignQuestion;
 }
 
 DonationAnswer.init({
@@ -28,7 +36,7 @@ DonationAnswer.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "Donation",
+            model: "donations",
             key: "id"
         }
     },
@@ -36,7 +44,7 @@ DonationAnswer.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "CampaignQuestion",
+            model: "campaign_questions",
             key: "id"
         }
     },
@@ -46,7 +54,8 @@ DonationAnswer.init({
     }
 }, {
     tableName: "donation_answers",
-    sequelize
+    sequelize,
+    underscored: true
 })
 
 export {DonationAnswer}

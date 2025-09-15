@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import * as organizationController from '../../controllers/crm/organization.controller'
-import { createOrganizationSchema, updateOrganizationSchema } from './organization.schemas'
-import { validate } from '../../../utils/validate'
-import { isStaffAuthenticated } from '../../middleware/isStaffAuthenticated'
+import * as organizationController from '../../controllers/crm/organization.controller.js'
+import { createOrganizationSchema, updateOrganizationSchema } from './organization.schemas.js'
+import { validate } from '../../middleware/validate.js'
+import { isStaffAuthenticated } from '../../middleware/isStaffAuthenticated.js'
+import { hasRole } from '../../middleware/hasRole.js'
 
 const router = Router();
 
@@ -10,21 +11,16 @@ const router = Router();
 // POST /api/organizations
 router.post('/', validate(createOrganizationSchema), organizationController.createNewOrganization);
 
-// Route to get all organizations (admin only)
-// GET /api/organizations
-router.get('/', isStaffAuthenticated, organizationController.getAllOrganizations);
-
-
 // Route to get organization by ID (with authorization)
 // GET /api/organizations/:id
-router.get('/:id', isStaffAuthenticated, organizationController.getOrganization);
+router.get('/:id', isStaffAuthenticated, hasRole(['admin', 'editor']), organizationController.getOrganization);
 
 // Route to update organization by ID (with authorization)
 // PUT /api/organizations/:id
-router.put('/:id', isStaffAuthenticated, validate(updateOrganizationSchema), organizationController.updateOrganization);
+router.put('/:id', isStaffAuthenticated, hasRole(['admin', 'editor']), validate(updateOrganizationSchema), organizationController.updateOrganization);
 
 // Route to delete organization by ID (with authorization)
 // DELETE /api/organizations/:id
-router.delete('/:id', isStaffAuthenticated, organizationController.deleteOrganization);
+router.delete('/:id', isStaffAuthenticated, hasRole(['admin']), organizationController.deleteOrganization);
 
 export default router;

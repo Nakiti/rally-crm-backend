@@ -1,5 +1,5 @@
-import { DataTypes, DATE, Model, Optional, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, UUIDV4, type Optional } from 'sequelize';
+import sequelize from '../config/database.js';
 
 interface DonorAccountAttributes {
     id: string;
@@ -10,7 +10,9 @@ interface DonorAccountAttributes {
     passwordHash: string;
 }
 
-class DonorAccount extends Model<DonorAccountAttributes> implements DonorAccountAttributes {
+interface DonorAccountCreationAttributes extends Optional<DonorAccountAttributes, "id"> {}
+
+class DonorAccount extends Model<DonorAccountAttributes, DonorAccountCreationAttributes> implements DonorAccountAttributes {
     public id!: string;
     public organizationId!: string;
     public firstName!: string;
@@ -32,7 +34,7 @@ DonorAccount.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "Organizations",
+            model: "organizations",
             key: "id"
         }
     },
@@ -55,7 +57,8 @@ DonorAccount.init({
     }
 }, {
     tableName: "donor_accounts",
-    sequelize
+    sequelize,
+    underscored: true
 })
 
 export {DonorAccount}

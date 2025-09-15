@@ -1,5 +1,10 @@
-import { DataTypes, DATE, Model, Optional, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, UUIDV4, type Optional } from 'sequelize';
+import sequelize from '../config/database.js';
+import type { Campaign } from './campaign.model.js';
+import type { Designation } from './designation.model.js';
+import type { DonorAccount } from './donorAccount.model.js';
+import type { Organization } from './organization.model.js';
+import type { DonationAnswer } from './donationAnswer.model.js';
 
 interface DonationAttributes {
     id: string;
@@ -12,7 +17,9 @@ interface DonationAttributes {
     status: string;
 }
 
-class Donation extends Model<DonationAttributes> implements DonationAttributes {
+interface DonationCreationAttributes extends Optional<DonationAttributes, "id"> {}
+
+class Donation extends Model<DonationAttributes, DonationCreationAttributes> implements DonationAttributes {
     public id!: string;
     public organizationId!: string;
     public campaignId!: string;
@@ -24,6 +31,13 @@ class Donation extends Model<DonationAttributes> implements DonationAttributes {
 
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
+
+    // Association properties
+    public campaign?: Campaign;
+    public designation?: Designation;
+    public donorAccount?: DonorAccount;
+    public organization?: Organization;
+    public answers?: DonationAnswer[];
 }
 
 Donation.init({
@@ -36,7 +50,7 @@ Donation.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "Organizations",
+            model: "organizations",
             key: "id"
         }
     },
@@ -44,7 +58,7 @@ Donation.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "Campaign",
+            model: "campaigns",
             key: "id"
         }
     },
@@ -52,7 +66,7 @@ Donation.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "DonorAccount",
+            model: "donor_accounts",
             key: "id"
         }
     },
@@ -60,7 +74,7 @@ Donation.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "Designation",
+            model: "designations",
             key: "id"
         }
     },
@@ -79,7 +93,8 @@ Donation.init({
     }
 }, {
     tableName: "donations",
-    sequelize
+    sequelize,
+    underscored: true
 })
 
 export {Donation}

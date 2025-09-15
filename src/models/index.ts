@@ -1,28 +1,37 @@
-import sequelize from '../config/database';
-import { Organization } from './organization.model';
-import { Campaign } from './campaign.model';
-import { StaffUser } from './staffUser.model';
-import { DonorAccount } from './donorAccount.model';
-import { Donation } from './donation.model';
-import { DonationAnswer } from './donationAnswer.model';
-import { CampaignAvailableDesignation } from './campaignAvailableDesignation.model';
-import { CampaignQuestion } from './campaignQuestion.model';
-import { Event } from './event.model';
-import { Attendee } from './attendee.model';
-import { Designation } from './designation.model';
-import { OrganizationPage } from './organizationPage.model';
+import sequelize from '../config/database.js';
+import { Organization } from './organization.model.js';
+import { Campaign } from './campaign.model.js';
+import { StaffAccount } from './staffAccount.model.js';
+import { DonorAccount } from './donorAccount.model.js';
+import { Donation } from './donation.model.js';
+import { DonationAnswer } from './donationAnswer.model.js';
+import { CampaignAvailableDesignation } from './campaignAvailableDesignation.model.js';
+import { CampaignQuestion } from './campaignQuestion.model.js';
+import { Event } from './event.model.js';
+import { Attendee } from './attendee.model.js';
+import { Designation } from './designation.model.js';
+import { OrganizationPage } from './organizationPage.model.js';
+import { StaffRole } from './staffRole.model.js';
 
 // === DEFINE ASSOCIATIONS ===
 
 // ========== ORGANIZATION RELATIONSHIPS ==========
 // Organization hasMany relationships
-Organization.hasMany(StaffUser, { foreignKey: 'organizationId', as: 'staffUsers' });
 Organization.hasMany(DonorAccount, { foreignKey: 'organizationId', as: 'donorAccounts' });
 Organization.hasMany(Campaign, { foreignKey: 'organizationId', as: 'campaigns' });
 Organization.hasMany(Donation, { foreignKey: 'organizationId', as: 'donations' });
 Organization.hasMany(OrganizationPage, { foreignKey: 'organizationId', as: 'pages' });
 Organization.hasMany(Designation, { foreignKey: 'organizationId', as: 'designations' });
 Organization.hasMany(Event, { foreignKey: 'organizationId', as: 'events' });
+Organization.hasMany(StaffRole, { foreignKey: 'organizationId', as: 'staffRoles' });
+
+// Organization many-to-many with StaffAccount through StaffRole
+Organization.belongsToMany(StaffAccount, { 
+  through: StaffRole, 
+  foreignKey: 'organizationId',
+  otherKey: 'staffAccountId',
+  as: 'staffAccounts' 
+});
 
 // ========== CAMPAIGN RELATIONSHIPS ==========
 // Campaign hasMany relationships
@@ -90,15 +99,26 @@ CampaignQuestion.belongsTo(Campaign, { foreignKey: 'campaignId', as: 'campaign' 
 CampaignAvailableDesignation.belongsTo(Campaign, { foreignKey: 'campaignId', as: 'campaign' });
 CampaignAvailableDesignation.belongsTo(Designation, { foreignKey: 'designationId', as: 'designation' });
 
-// ========== STAFF USER RELATIONSHIPS ==========
-// StaffUser belongsTo relationships
-StaffUser.belongsTo(Organization, { foreignKey: 'organizationId', as: 'organization' });
-StaffUser.hasMany(Organization, { foreignKey: 'id', as: 'organizations' });
+// ========== STAFF ACCOUNT RELATIONSHIPS ==========
+// StaffAccount hasMany relationships
+StaffAccount.hasMany(StaffRole, { foreignKey: 'staffAccountId', as: 'staffRoles' });
+
+// StaffAccount many-to-many with Organization through StaffRole
+StaffAccount.belongsToMany(Organization, { 
+  through: StaffRole, 
+  foreignKey: 'staffAccountId',
+  otherKey: 'organizationId',
+  as: 'organizations' 
+});
 
 // ========== ORGANIZATION PAGE RELATIONSHIPS ==========
 // OrganizationPage belongsTo relationships
 OrganizationPage.belongsTo(Organization, { foreignKey: 'organizationId', as: 'organization' });
 
+// ========== STAFF ROLE RELATIONSHIPS ==========
+// StaffRole belongsTo relationships
+StaffRole.belongsTo(StaffAccount, { foreignKey: 'staffAccountId', as: 'staffAccount' });
+StaffRole.belongsTo(Organization, { foreignKey: 'organizationId', as: 'organization' });
 
 // Sync all models that are defined on sequelize instance.
 // In a production environment, you would use migrations instead of `sync`.
@@ -113,7 +133,7 @@ export {
   sequelize,
   syncDb,
   Organization,
-  StaffUser,
+  StaffAccount,
   Campaign,
   Donation,
   DonationAnswer,
@@ -124,4 +144,5 @@ export {
   Attendee,
   Designation,
   OrganizationPage,
+  StaffRole,
 };

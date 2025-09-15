@@ -1,5 +1,5 @@
-import { DataTypes, Model, Optional, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, UUIDV4, type Optional } from 'sequelize';
+import sequelize from '../config/database.js';
 
 // Interface for Organization attributes
 interface OrganizationAttributes {

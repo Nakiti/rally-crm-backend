@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { ZodObject, ZodError } from 'zod';
-import { ApiError } from './ApiError';
+import { ApiError } from '../../utils/ApiError.js';
 
 /**
  * A middleware function that validates the request body, params, and query

@@ -1,14 +1,13 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+
 import { 
   createOrganization, 
-  getOrganizationForStaff, 
   updateOrganization as updateOrganizationService, 
   deleteOrganization as deleteOrganizationService,
   getOrganizationById,
   getAllOrganizations as getAllOrganizationsService 
-} from '../../services/crm/organization.service';
-import { ApiError } from '../../../utils/ApiError';
-
+} from '../../services/crm/organization.service.js';
+import { ApiError } from '../../../utils/ApiError.js';
 
 /**
  * Create a new organization
@@ -21,7 +20,6 @@ export const createNewOrganization = async (
 ): Promise<void> => {
   try {
     const { name, subdomain, stripeAccountId, settings } = req.body;
-
 
     const organizationData = {
       name,
@@ -42,32 +40,6 @@ export const createNewOrganization = async (
   }
 };
 
-/**
- * Get organization details for authenticated staff member
- * GET /api/organizations/me
- */
-export const getMyOrganization = async (
-  req: Request, 
-  res: Response, 
-  next: NextFunction
-): Promise<void> => {
-  try {
-    // Check if user is authenticated
-    if (!req.user) {
-      throw new ApiError(401, 'Authentication required');
-    }
-
-    const organization = await getOrganizationForStaff(req.user);
-    
-    res.status(200).json({
-      success: true,
-      data: organization,
-      message: 'Organization retrieved successfully'
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 /**
  * Get organization by ID (with authorization check)
@@ -85,6 +57,10 @@ export const getOrganization = async (
     }
 
     const { id } = req.params;
+    if (!id) {
+      throw new ApiError(400, 'Organization ID is required');
+    }
+    
     const organization = await getOrganizationById(id, req.user);
     
     res.status(200).json({
@@ -107,17 +83,23 @@ export const updateOrganization = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!req.user) {
+      throw new ApiError(401, 'Authentication required');
+    }
 
     const { id } = req.params;
     const { name, subdomain, stripeAccountId, settings } = req.body;
 
+    if (!id) {
+      throw new ApiError(400, 'Organization ID is required');
+    }
 
     const updateData = {
       name,
       subdomain,
       stripeAccountId,
       settings
-    };
+    } as any;
 
     // Remove undefined values
     Object.keys(updateData).forEach(key => 
@@ -152,6 +134,10 @@ export const deleteOrganization = async (
     }
 
     const { id } = req.params;
+    if (!id) {
+      throw new ApiError(400, 'Organization ID is required');
+    }
+
     await deleteOrganizationService(id, req.user);
     
     res.status(200).json({

@@ -1,21 +1,23 @@
-import { DataTypes, DATE, Model, Optional, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, UUIDV4, type Optional } from 'sequelize';
+import sequelize from '../config/database.js';
 
 interface CampaignAttributes {
     id: string;
     organizationId: string;
-    defaultDesignationId: string;
+    defaultDesignationId?: string;
     internalName: string;
-    externalName: string;
-    slug: string;
-    goalAmount: number;
-    icon: string;
-    pageConfig: object;
+    externalName?: string;
+    slug?: string;
+    goalAmount?: number;
+    icon?: string;
+    pageConfig?: object;
     isActive: boolean
 
 }
 
-class Campaign extends Model<CampaignAttributes> implements CampaignAttributes {
+export interface CampaignCreationAttributes extends Optional<CampaignAttributes, "id"> {}
+
+class Campaign extends Model<CampaignAttributes, CampaignCreationAttributes> implements CampaignAttributes {
     public id!: string;
     public organizationId!: string;
     public defaultDesignationId!: string;
@@ -41,7 +43,7 @@ Campaign.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "Organizations",
+            model: "organizations",
             key: "id"
         }
     },
@@ -49,7 +51,7 @@ Campaign.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "Designation",
+            model: "designations",
             key: "id"
         }
     },
@@ -85,7 +87,8 @@ Campaign.init({
     }
 }, {
     tableName: "campaigns",
-    sequelize
+    sequelize,
+    underscored: true
 })
 
 export {Campaign}

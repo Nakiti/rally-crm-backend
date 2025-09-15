@@ -1,7 +1,7 @@
-import { Organization } from '../../../models';
-import { ApiError } from "../../../utils/ApiError"
-import { CrmOrganizationRepository } from '../../repositories/crm/organization.repository';
-import { StaffUser } from '../../../models';
+import { Organization } from '../../../models/index.js';
+import { ApiError } from "../../../utils/ApiError.js"
+import { CrmOrganizationRepository } from '../../repositories/crm/organization.repository.js';
+import type { StaffSession } from '../../types/express.types.js';
 
 interface CreateOrganizationData {
     name: string;
@@ -39,28 +39,6 @@ export const createOrganization = async (data: CreateOrganizationData): Promise<
 
 
 /**
- * Service to securely fetch the organization details for the currently authenticated staff member.
- * @param staffUser - The authenticated user object provided by the middleware.
- */
-export const getOrganizationForStaff = async (staffUser: StaffUser): Promise<Organization> => {
-  // 1. --- DATA ACCESS ---
-  // Instantiate the repository WITH the user's security context.
-  const orgRepo = new CrmOrganizationRepository(staffUser);
-
-  // 2. --- FETCH DATA ---
-  // Call the secure repository method. The repository handles the tenancy check.
-  const organization = await orgRepo.findByAuthenticatedStaff();
-
-  if (!organization) {
-    // This case should be rare if the JWT is valid, but it's a good safeguard.
-    throw new ApiError(404, 'Associated organization not found.');
-  }
-
-  // 3. --- RETURN ---
-  return organization;
-};
-
-/**
  * Update organization by ID with authorization check
  * @param id - Organization ID to update
  * @param data - Update data
@@ -69,7 +47,7 @@ export const getOrganizationForStaff = async (staffUser: StaffUser): Promise<Org
 export const updateOrganization = async (
     id: string, 
     data: UpdateOrganizationData, 
-    staffUser: StaffUser
+    staffUser: StaffSession
 ): Promise<Organization> => {
     try {
         // Create repository instance with user context for authorization
@@ -91,7 +69,7 @@ export const updateOrganization = async (
  * @param id - Organization ID to delete
  * @param staffUser - The authenticated staff user for authorization
  */
-export const deleteOrganization = async (id: string, staffUser: StaffUser): Promise<void> => {
+export const deleteOrganization = async (id: string, staffUser: StaffSession): Promise<void> => {
     try {
         // Create repository instance with user context for authorization
         const orgRepo = new CrmOrganizationRepository(staffUser);
@@ -111,7 +89,7 @@ export const deleteOrganization = async (id: string, staffUser: StaffUser): Prom
  * @param id - Organization ID to fetch
  * @param staffUser - The authenticated staff user for authorization
  */
-export const getOrganizationById = async (id: string, staffUser: StaffUser): Promise<Organization> => {
+export const getOrganizationById = async (id: string, staffUser: StaffSession): Promise<Organization> => {
     try {
         // Create repository instance with user context for authorization
         const orgRepo = new CrmOrganizationRepository(staffUser);

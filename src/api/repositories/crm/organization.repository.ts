@@ -1,16 +1,17 @@
-import { Organization, StaffUser } from '../../../models';
-import { ApiError } from '../../../utils/ApiError';
+import { Organization } from '../../../models/index.js';
+import { ApiError } from '../../../utils/ApiError.js';
+import type { StaffSession } from '../../types/express.types.js';
 
 /**
  * A repository for handling all database operations for Organizations
  * in the context of the CRM.
  */
 export class CrmOrganizationRepository {
-  private user: StaffUser | null;
+  private user: StaffSession | null;
 
   // The constructor now accepts an optional user.
   // For 'create', it's not needed. For secure fetches/updates, it is.
-  constructor(user: StaffUser | null = null) {
+  constructor(user: StaffSession | null = null) {
     this.user = user;
   }
 
@@ -29,7 +30,7 @@ export class CrmOrganizationRepository {
     try {
       const newOrganization = await Organization.create(organizationData);
       return newOrganization;
-    } catch (error) {
+    } catch (error: any) {
       // Handle potential database errors, specifically the unique constraint on the subdomain.
       if (error.name === 'SequelizeUniqueConstraintError') {
         throw new ApiError(409, 'An organization with this subdomain already exists.');
@@ -37,29 +38,6 @@ export class CrmOrganizationRepository {
       // For any other database error, throw a generic server error.
       throw new ApiError(500, 'Failed to create organization in database.');
     }
-  }
-
-  /**
-   * Finds the organization associated with the authenticated staff member.
-   * This demonstrates a secure, context-aware fetch.
-   */
-  public async findByAuthenticatedStaff(): Promise<Organization | null> {
-    // 1. Check if the repository was initialized with a user context.
-    // This is a developer guardrail to ensure the service layer uses the repository correctly.
-    if (!this.user || !this.user.organizationId) {
-      // This is a server error, not a user error.
-      throw new ApiError(500, 'Repository must be initialized with a user context for this operation.');
-    }
-
-    // 2. Perform the database query, scoping it to the user's organizationId.
-    // This is the core tenancy check that prevents data leaks.
-    const organization = await Organization.findOne({
-      where: {
-        id: this.user.organizationId,
-      },
-    });
-
-    return organization;
   }
 
   /**
@@ -126,7 +104,7 @@ export class CrmOrganizationRepository {
     try {
       await organization.update(updateData);
       return organization;
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === 'SequelizeUniqueConstraintError') {
         throw new ApiError(409, 'An organization with this subdomain already exists.');
       }

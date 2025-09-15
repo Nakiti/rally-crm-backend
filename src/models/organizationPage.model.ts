@@ -1,5 +1,5 @@
-import { DataTypes, DATE, Model, Optional, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, UUIDV4 } from 'sequelize';
+import sequelize from '../config/database.js';
 
 interface OrganizationPageAttributes {
     id: string;
@@ -29,7 +29,7 @@ OrganizationPage.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "Organizations",
+            model: "organizations",
             key: "id"
         }
     },
@@ -43,7 +43,8 @@ OrganizationPage.init({
     }
 }, {
     tableName: "organization_pages",
-    sequelize
+    sequelize,
+    underscored: true
 })
 
 export {OrganizationPage}

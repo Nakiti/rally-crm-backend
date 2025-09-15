@@ -1,19 +1,75 @@
-import { Organization } from "../../../models";
-import { ApiError } from "../../../utils/ApiError";
+import { PublicOrganizationRepository } from '../../repositories/public/organization.repository.js';
+import { ApiError } from '../../../utils/ApiError.js';
 
 /**
- * Fetches the public-facing data for an organization by its subdomain.
- * This function is optimized to only return non-sensitive data.
+ * Service for handling public-facing organization operations.
+ * This service only returns safe, non-sensitive information.
  */
-export const getPublicOrganizationData = async (subdomain: string) => {
-  const organization = await Organization.findOne({
-    where: { subdomain },
-    // Only select the fields that are safe for public display
-    attributes: ['name', 'settings'],
-  });
+export class PublicOrganizationService {
+  private repository: PublicOrganizationRepository;
 
-  if (!organization) {
-    throw new ApiError(404, 'Organization not found');
+  constructor() {
+    this.repository = new PublicOrganizationRepository();
   }
-  return organization;
-};
+
+  /**
+   * Get organization by subdomain (public information only)
+   * @param subdomain - The organization's subdomain
+   * @returns Public organization data
+   */
+  public async getOrganizationBySubdomain(subdomain: string): Promise<{
+    id: string;
+    name: string;
+    subdomain: string;
+  }> {
+    try {
+      const organization = await this.repository.findBySubdomain(subdomain);
+      
+      if (!organization) {
+        throw new ApiError(404, 'Organization not found');
+      }
+
+      return organization;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(500, 'Failed to fetch organization');
+    }
+  }
+
+  /**
+   * Get organization by ID (public information only)
+   * @param id - The organization's ID
+   * @returns Public organization data
+   */
+  public async getOrganizationById(id: string): Promise<{
+    id: string;
+    name: string;
+    subdomain: string;
+  }> {
+    try {
+      const organization = await this.repository.findById(id);
+      
+      if (!organization) {
+        throw new ApiError(404, 'Organization not found');
+      }
+
+      return organization;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(500, 'Failed to fetch organization');
+    }
+  }
+}
+
+// Export convenience functions for direct use
+const publicOrganizationService = new PublicOrganizationService();
+
+export const getOrganizationBySubdomain = (subdomain: string) => 
+  publicOrganizationService.getOrganizationBySubdomain(subdomain);
+
+export const getOrganizationById = (id: string) => 
+  publicOrganizationService.getOrganizationById(id);

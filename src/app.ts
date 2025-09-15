@@ -1,9 +1,9 @@
-import express, {Express, Request, Response, NextFunction} from "express"
+import express, { type Express, type Request, type Response, type NextFunction} from "express"
 import cors from "cors"
 import dotenv from "dotenv"
-import {connectDb} from "./config/database"
-import { ApiError } from "./utils/ApiError"
-import { mainCrmRouter, mainPublicRouter } from "./api/routes"
+import {connectDb} from "./config/database.js"
+import { ApiError } from "./utils/ApiError.js"
+import { mainCrmRouter, mainPublicRouter } from "./api/routes/index.js"
 // load env vars
 dotenv.config()
 

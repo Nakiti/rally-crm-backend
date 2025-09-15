@@ -1,42 +1,32 @@
-import { DataTypes, DATE, Model, Optional, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, UUIDV4, type Optional } from 'sequelize';
+import sequelize from '../config/database.js';
 
-interface StaffUserAttributes {
+interface StaffAccountAttributes {
     id: string;
-    organizationId: string;
     firstName: string;
     lastName: string;
     email: string;
     passwordHash: string;
-    role: string;
 }
 
-class StaffUser extends Model<StaffUserAttributes> implements StaffUserAttributes {
+type StaffAccountCreationAttributes = Optional<StaffAccountAttributes, 'id'>;
+
+class StaffAccount extends Model<StaffAccountAttributes, StaffAccountCreationAttributes> implements StaffAccountAttributes {
     public id!: string;
-    public organizationId!: string;
     public firstName!: string;
     public lastName!: string;
     public email!: string;
     public passwordHash!: string;
-    public role!: string;
 
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
 
-StaffUser.init({
+StaffAccount.init({
     id: {
         type: DataTypes.UUID,
         defaultValue: UUIDV4,
-        primaryKey: true
-    },
-    organizationId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        references: {
-            model: "Organizations",
-            key: "id"
-        }
+        primaryKey: true,
     },
     firstName: {
         type: new DataTypes.STRING(255),
@@ -55,14 +45,10 @@ StaffUser.init({
         type: DataTypes.STRING,
         allowNull: false
     },
-    role: {
-        type: DataTypes.ENUM,
-        allowNull: false,
-        defaultValue: 'editor'
-    }
 }, {
-    tableName: "staff_users",
-    sequelize
+    tableName: "staff_accounts",
+    sequelize,
+    underscored: true
 })
 
-export {StaffUser}
+export {StaffAccount}

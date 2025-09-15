@@ -1,5 +1,5 @@
-import { DataTypes, DATE, Model, Optional, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, UUIDV4 } from 'sequelize';
+import sequelize from '../config/database.js';
 
 interface CampaignAvailableDesignationAttributes {
     id: string;

@@ -1,17 +1,18 @@
-import { DataTypes, DATE, Model, Optional, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, UUIDV4, type Optional } from 'sequelize';
+import sequelize from '../config/database.js';
 
 interface CampaignQuestionAttributes {
     id: string;
     campaignId: string;
     questionText: string;
     questionType: string;
-    options: object
+    options: object 
     isRequired: boolean;
     displayOrder: number;
 }
 
-class CampaignQuestion extends Model<CampaignQuestionAttributes> implements CampaignQuestionAttributes {
+interface CampaignQuestionCreationAttributes extends Optional<CampaignQuestionAttributes, "id"> {}
+class CampaignQuestion extends Model<CampaignQuestionAttributes, CampaignQuestionCreationAttributes> implements CampaignQuestionAttributes {
     public id!: string;
     public campaignId!: string;
     public questionText!: string;
@@ -34,7 +35,7 @@ CampaignQuestion.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "Campaign",
+            model: "campaigns",
             key: "id"
         }
     },
@@ -62,7 +63,8 @@ CampaignQuestion.init({
     }
 }, {
     tableName: "campaign_questions",
-    sequelize
+    sequelize,
+    underscored: true
 })
 
 export {CampaignQuestion}

@@ -1,5 +1,5 @@
-import { DataTypes, DATE, Model, Optional, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, UUIDV4, type Optional } from 'sequelize';
+import sequelize from '../config/database.js';
 
 interface DesignationAttributes {
     id: string;
@@ -10,7 +10,8 @@ interface DesignationAttributes {
     goalAmount: number;
 }
 
-class Designation extends Model<DesignationAttributes> implements DesignationAttributes {
+interface DesignationCreationAttributes extends Optional<DesignationAttributes, "id"> {}
+class Designation extends Model<DesignationAttributes, DesignationCreationAttributes> implements DesignationAttributes {
     public id!: string;
     public organizationId!: string;
     public name!: string;
@@ -32,7 +33,7 @@ Designation.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "Organizations",
+            model: "organizations",
             key: "id"
         }
     },
@@ -55,7 +56,8 @@ Designation.init({
     }
 }, {
     tableName: "designations",
-    sequelize
+    sequelize,
+    underscored: true
 })
 
 export {Designation}

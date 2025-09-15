@@ -1,5 +1,5 @@
-import { DataTypes, DATE, Model, Optional, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, UUIDV4 } from 'sequelize';
+import sequelize from '../config/database.js';
 
 interface EventAttributes {
     id: string;
@@ -34,7 +34,7 @@ Event.init({
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: "Organizations",
+            model: "organizations",
             key: "id"
         }
     },
@@ -61,7 +61,8 @@ Event.init({
     }
 }, {
     tableName: "events",
-    sequelize
+    sequelize,
+    underscored: true
 })
 
 export {Event}

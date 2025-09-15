@@ -1,5 +1,5 @@
-import { DataTypes, DATE, Model, Optional, UUIDV4 } from 'sequelize';
-import sequelize from '../config/database';
+import { DataTypes, Model, UUIDV4 } from 'sequelize';
+import sequelize from '../config/database.js';
 
 interface AttendeeAttributes {
     id: string;
@@ -47,7 +47,8 @@ Attendee.init({
     },
 }, {
     tableName: "attendees",
-    sequelize
+    sequelize,
+    underscored: true
 })
 
 export {Attendee}

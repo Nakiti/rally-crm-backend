@@ -1,14 +1,31 @@
 import { Router } from 'express';
-import crmOrganizationRoutes from "./crm/organization.routes"
-// import campaignRoutes from './campaign.routes';
-// import authRoutes from './auth.routes';
-// ... import other route files as you create them
+import crmOrganizationRoutes from "./crm/organization.routes.js"
+import crmStaffRoutes from "./crm/staff.routes.js"
+import crmUserRoutes from "./crm/user.routes.js"
+import crmCampaignRoutes from "./crm/campaign.routes.js"
+import crmDonationRoutes from "./crm/donations.routes.js"
+import crmDonorRoutes from "./crm/donors.routes.js"
+import crmDesignationRoutes from "./crm/designation.routes.js"
+import publicOrganizationRoutes from "./public/organization.routes.js"
+import publicAuthRoutes from "./public/auth.routes.js"
+import publicCampaignRoutes from "./public/campaign.routes.js"
+import publicDonorAuthRoutes from "./public/donorAuth.routes.js"
+import publicDonorRoutes from "./public/donor.routes.js"
 
 const mainCrmRouter = Router();
 mainCrmRouter.use("/organization", crmOrganizationRoutes)
-
+mainCrmRouter.use("/staff", crmStaffRoutes)
+mainCrmRouter.use("/", crmUserRoutes)
+mainCrmRouter.use("/campaign", crmCampaignRoutes)
+mainCrmRouter.use("/donations", crmDonationRoutes)
+mainCrmRouter.use("/donors", crmDonorRoutes)
+mainCrmRouter.use("/designations", crmDesignationRoutes)
 
 const mainPublicRouter = Router()
-mainPublicRouter.use("/organization", null)
+mainPublicRouter.use("/organization", publicOrganizationRoutes)
+mainPublicRouter.use("/auth", publicAuthRoutes)
+mainPublicRouter.use("/campaign", publicCampaignRoutes)
+mainPublicRouter.use("/donor-auth", publicDonorAuthRoutes)
+mainPublicRouter.use("/donor", publicDonorRoutes)
 
 export { mainCrmRouter, mainPublicRouter }
