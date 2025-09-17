@@ -69,7 +69,7 @@ Campaign.init({
         unique: true
     },
     goalAmount: {
-        type: DataTypes.DECIMAL(2, 12),
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: true
     },
     icon: {

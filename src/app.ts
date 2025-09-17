@@ -4,6 +4,8 @@ import dotenv from "dotenv"
 import {connectDb} from "./config/database.js"
 import { ApiError } from "./utils/ApiError.js"
 import { mainCrmRouter, mainPublicRouter } from "./api/routes/index.js"
+import cookieParser from "cookie-parser"
+
 // load env vars
 dotenv.config()
 
@@ -16,9 +18,14 @@ app.use(cors({
 }))
 
 app.use(express.json())
+app.use(cookieParser())
 
 app.use("/api/crm", mainCrmRouter)
 app.use("/api/public", mainPublicRouter)
+
+app.get("/", (req, res) => {
+  res.json("alive")
+})
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new ApiError(404, 'Not Found'));

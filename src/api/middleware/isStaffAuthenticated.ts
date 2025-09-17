@@ -23,11 +23,8 @@ export const isStaffAuthenticated = async (
 ): Promise<void> => {
   try {
     // 1. Check for and extract the token
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new ApiError(401, 'Authentication token is required.');
-    }
-    const token = authHeader.split(' ')[1];
+    const token = req.cookies.auth_token;
+
     if (!token) {
       throw new ApiError(401, 'Authentication token is required.');
     }

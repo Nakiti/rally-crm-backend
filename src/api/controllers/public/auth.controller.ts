@@ -72,6 +72,7 @@ export const signUp = async (
       password
     };
 
+    console.log(signupData);
     const result = await signUpService(signupData);
     
     res.status(201).json({
@@ -85,7 +86,7 @@ export const signUp = async (
 };
 
 /**
- * Log in a user and return their organization memberships
+ * Log in a user and create a session for the specified organization
  * POST /api/public/auth/login
  */
 export const logIn = async (
@@ -94,13 +95,14 @@ export const logIn = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { email, password, organization } = req.body;
+    console.log(email, password, organization)
 
     // Validate required fields
-    if (!email || !password) {
+    if (!email || !password || !organization) {
       res.status(400).json({
         success: false,
-        message: 'Email and password are required'
+        message: 'Email, password, and organization are required'
       });
       return;
     }
@@ -115,12 +117,27 @@ export const logIn = async (
       return;
     }
 
-    const loginData = { email, password };
+    const loginData = { email, password, organization };
     const result = await logInService(loginData);
+
+    // Set the JWT token as an HTTP-only cookie
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      path: '/', // Ensure cookie is available for all paths
+      domain: process.env.NODE_ENV === 'production' ? undefined : 'localhost' // Set domain for development
+    };
+
+    res.cookie('auth_token', result.token, cookieOptions);
+    
+    console.log('Setting cookie with options:', cookieOptions);
+    console.log('Login result:', result);
     
     res.status(200).json({
       success: true,
-      data: result,
+      data: { user: result.user },
       message: 'Login successful'
     });
   } catch (error) {
@@ -139,7 +156,8 @@ export const createSession = async (
 ): Promise<void> => {
   try {
     const { organizationId, staffAccountId } = req.body;
-
+    console.log(req.body)
+ 
     // Validate required fields
     if (!organizationId || !staffAccountId) {
       res.status(400).json({
@@ -151,11 +169,42 @@ export const createSession = async (
 
     const sessionData = { organizationId, staffAccountId };
     const result = await createSessionService(sessionData);
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    };
+
+    res.cookie('auth_token', result.token, cookieOptions as any)
     
     res.status(200).json({
       success: true,
-      data: result,
+      data: {user: result.user},
       message: 'Session created successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Log out the current user by clearing the authentication cookie
+ * POST /api/public/auth/logout
+ */
+export const logOut = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
+  try {
+    // Clear the authentication cookie
+    res.clearCookie('auth_token');
+    
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully'
     });
   } catch (error) {
     next(error);

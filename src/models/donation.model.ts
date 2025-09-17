@@ -76,10 +76,10 @@ Donation.init({
         references: {
             model: "designations",
             key: "id"
-        }
+        } 
     },
     amount: {
-        type: DataTypes.DECIMAL(2, 12),
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: true
     },
     stripeChargeId: {

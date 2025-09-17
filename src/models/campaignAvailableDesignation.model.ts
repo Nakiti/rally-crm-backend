@@ -40,7 +40,8 @@ CampaignAvailableDesignation.init({
     }
 }, {
     tableName: "campaign_available_designations",
-    sequelize
+    sequelize,
+    underscored: true
 })
 
 export {CampaignAvailableDesignation}

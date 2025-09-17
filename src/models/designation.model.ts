@@ -46,7 +46,7 @@ Designation.init({
         allowNull: true
     },
     goalAmount: {
-        type: DataTypes.DECIMAL(2, 12),
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: true
     },
     isArchived: {

@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { 
   signUp, 
   logIn, 
-  createSession 
+  createSession,
+  logOut 
 } from '../../controllers/public/auth.controller.js';
 import { validate } from '../../middleware/validate.js';
 import { 
@@ -10,6 +11,7 @@ import {
   loginSchema, 
   sessionSchema 
 } from './auth.schemas.js';
+import { isGloballyAuthenticated } from '../../middleware/isGloballyAuthenticated.js';
 
 const router = Router();
 
@@ -33,5 +35,12 @@ router.post('/login', validate(loginSchema), logIn);
  * @access  Public
  */
 router.post('/session', validate(sessionSchema), createSession);
+
+/**
+ * @route   POST /api/public/auth/logout
+ * @desc    Log out the current user by clearing the authentication cookie
+ * @access  Public
+ */
+router.post('/logout', logOut);
 
 export default router;

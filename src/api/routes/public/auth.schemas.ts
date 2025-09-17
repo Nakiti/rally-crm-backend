@@ -40,7 +40,11 @@ export const loginSchema = z.object({
     
     password: z.string()
       .min(1, 'Password is required')
-      .max(255, 'Password must be less than 255 characters')
+      .max(255, 'Password must be less than 255 characters'),
+    
+    organization: z.string()
+      .min(1, 'Organization name is required')
+      .max(255, 'Organization name must be less than 255 characters')
   })
 });
 

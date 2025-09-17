@@ -8,6 +8,9 @@ interface OrganizationAttributes {
   subdomain: string;
   stripeAccountId?: string;
   settings?: object;
+
+  readonly createdAt?: Date;
+  readonly updatedAt?: Date;
 }
 
 type OrganizationCreationAttributes = Optional<OrganizationAttributes, 'id'>;
@@ -49,7 +52,8 @@ Organization.init({
   },
 }, {
   tableName: 'organizations',
-  sequelize, // Pass the connection instance
+  sequelize,
+  underscored: true
 });
 
 export { Organization };

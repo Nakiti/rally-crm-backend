@@ -1,10 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { Transaction } from 'sequelize';
-import sequelize from '../../../config/database.js';
-import { Organization, StaffAccount, StaffRole } from '../../../models/index.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import type { StaffRoleEnum } from '../../types/session.types.js';
+import { PublicAuthRepository } from '../../repositories/public/auth.repository.js';
 
 // Interface for signup request data
 export interface SignupData {
@@ -20,6 +18,7 @@ export interface SignupData {
 export interface LoginData {
   email: string;
   password: string;
+  organization: string;
 }
 
 // Interface for session creation data
@@ -41,6 +40,11 @@ export interface OrganizationMembership {
  * This includes signup, login, and session creation.
  */
 export class PublicAuthService {
+  private authRepository: PublicAuthRepository;
+
+  constructor() {
+    this.authRepository = new PublicAuthRepository();
+  }
   /**
    * Create a new organization with the first admin user (complex transactional operation)
    * @param signupData - The signup information
@@ -60,26 +64,26 @@ export class PublicAuthService {
     };
   }> {
     // Start a database transaction
-    const transaction: Transaction = await sequelize.transaction();
+    const transaction = await this.authRepository.createTransaction();
 
     try {
       // Check if organization subdomain already exists
-      const existingOrg = await Organization.findOne({
-        where: { subdomain: signupData.organizationSubdomain },
+      const subdomainExists = await this.authRepository.checkSubdomainExists(
+        signupData.organizationSubdomain, 
         transaction
-      });
+      );
 
-      if (existingOrg) {
+      if (subdomainExists) {
         throw new ApiError(400, 'Organization subdomain already exists');
       }
 
       // Check if email already exists
-      const existingStaff = await StaffAccount.findOne({
-        where: { email: signupData.email },
+      const emailExists = await this.authRepository.checkEmailExists(
+        signupData.email, 
         transaction
-      });
+      );
 
-      if (existingStaff) {
+      if (emailExists) {
         throw new ApiError(400, 'Email already registered');
       }
 
@@ -88,40 +92,46 @@ export class PublicAuthService {
       const passwordHash = await bcrypt.hash(signupData.password, saltRounds);
 
       // Create the organization
-      const organization = await Organization.create({
+      const organization = await this.authRepository.createOrganization({
         name: signupData.organizationName,
         subdomain: signupData.organizationSubdomain,
-      }, { transaction });
+      }, transaction);
+
 
       // Create the staff account
-      const staffAccount = await StaffAccount.create({
+      const staffAccount = await this.authRepository.createStaffAccount({
         firstName: signupData.firstName,
         lastName: signupData.lastName,
         email: signupData.email,
         passwordHash: passwordHash,
-      }, { transaction });
+      }, transaction);
 
+
+      const organizationData = organization.toJSON();
+      const staffAccountData = staffAccount.toJSON();
+      console.log('Organization Data:', organizationData);
+      console.log('Staff Account Data:', staffAccountData);
       // Create the admin role linking the staff account to the organization
-      await StaffRole.create({
-        staffAccountId: staffAccount.id,
-        organizationId: organization.id,
+      await this.authRepository.createStaffRole({
+        staffAccountId: staffAccountData.id,
+        organizationId: organizationData.id,
         role: 'admin' as StaffRoleEnum,
-      }, { transaction });
+      }, transaction);
 
       // Commit the transaction
       await transaction.commit();
 
       return {
         organization: {
-          id: organization.id,
-          name: organization.name,
-          subdomain: organization.subdomain,
+          id: organizationData.id,
+          name: organizationData.name,
+          subdomain: organizationData.subdomain,
         },
         staffAccount: {
-          id: staffAccount.id,
-          firstName: staffAccount.firstName,
-          lastName: staffAccount.lastName,
-          email: staffAccount.email,
+          id: staffAccountData.id,
+          firstName: staffAccountData.firstName,
+          lastName: staffAccountData.lastName,
+          email: staffAccountData.email,
         },
       };
     } catch (error) {
@@ -136,62 +146,84 @@ export class PublicAuthService {
   }
 
   /**
-   * Authenticate a user and return their organization memberships
-   * @param loginData - The login credentials
-   * @returns List of organizations the user is a member of
+   * Authenticate a user and create a session for the specified organization
+   * @param loginData - The login credentials including organization name
+   * @returns JWT token and user session information
    */
   public async logIn(loginData: LoginData): Promise<{
-    staffAccount: {
+    token: string;
+    user: {
       id: string;
       firstName: string;
       lastName: string;
       email: string;
+      organizationId: string;
+      role: StaffRoleEnum;
     };
-    organizations: OrganizationMembership[];
   }> {
     try {
       // Find the staff account by email
-      const staffAccount = await StaffAccount.findOne({
-        where: { email: loginData.email }
-      });
+      const staffAccount = await this.authRepository.findStaffAccountByEmail(loginData.email);
 
       if (!staffAccount) {
         throw new ApiError(401, 'Invalid email or password');
       }
 
+      const staffAccountData = staffAccount.toJSON();
+
       // Verify the password
-      const isPasswordValid = await bcrypt.compare(loginData.password, staffAccount.passwordHash);
+      const isPasswordValid = await bcrypt.compare(loginData.password, staffAccountData.passwordHash);
       if (!isPasswordValid) {
         throw new ApiError(401, 'Invalid email or password');
       }
 
-      // Get all organizations the user is a member of
-      const staffRoles = await StaffRole.findAll({
-        where: { staffAccountId: staffAccount.id },
-        include: [{
-          model: Organization,
-          as: 'organization',
-          attributes: ['id', 'name', 'subdomain']
-        }]
+      // Find the organization by name
+      const organization = await this.authRepository.findOrganizationByName(loginData.organization);
+      if (!organization) {
+        throw new ApiError(404, 'Organization not found');
+      }
+
+      const organizationData = organization.toJSON()
+      console.log("organization data", organizationData)
+      console.log("staff caonu data", staffAccountData)
+
+      // Verify the user has a role in this organization
+      const staffRole = await this.authRepository.findStaffRoleWithAccount(
+        staffAccountData.id,
+        organizationData.id
+      );
+
+      // const staffRoleData = staffRole.toJson()
+
+      if (!staffRole) {
+        throw new ApiError(403, 'You do not have access to this organization');
+      }
+
+      // Create the JWT payload
+      const jwtPayload = {
+        staffAccountId: staffAccountData.id,
+        organizationId: organization.id,
+        role: staffRole.role,
+      };
+
+      // Generate the JWT token
+      const token = jwt.sign(jwtPayload, process.env.JWT_SECRET as string, { 
+        expiresIn: '24h', // Token expires in 24 hours
       });
 
-      const organizations: OrganizationMembership[] = staffRoles.map(role => ({
-        id: role.organizationId,
-        name: (role as any).organization?.name || '',
-        subdomain: (role as any).organization?.subdomain || '',
-        role: role.role as StaffRoleEnum,
-      }));
-
       return {
-        staffAccount: {
-          id: staffAccount.id,
-          firstName: staffAccount.firstName,
-          lastName: staffAccount.lastName,
-          email: staffAccount.email,
+        token,
+        user: {
+          id: staffAccountData.id,
+          firstName: staffAccountData.firstName,
+          lastName: staffAccountData.lastName,
+          email: staffAccountData.email,
+          organizationId: organization.id,
+          role: staffRole.role,
         },
-        organizations,
       };
     } catch (error) {
+      console.log(error)
       if (error instanceof ApiError) {
         throw error;
       }
@@ -217,15 +249,12 @@ export class PublicAuthService {
   }> {
     try {
       // Verify the user is a member of the specified organization
-      const staffRole = await StaffRole.findOne({
-        where: {
-          staffAccountId: sessionData.staffAccountId,
-          organizationId: sessionData.organizationId,
-        },
-        include: [StaffAccount]
-      });
+      const staffRole = await this.authRepository.findStaffRoleWithAccount(
+        sessionData.staffAccountId,
+        sessionData.organizationId
+      );
 
-      if (!staffRole || !staffRole.staffAccount) {
+      if (!staffRole) {
         throw new ApiError(403, 'Access denied. You are not a member of this organization.');
       }
 
@@ -244,12 +273,12 @@ export class PublicAuthService {
       return {
         token,
         user: {
-          id: staffRole.staffAccountId,
+          id: staffRole.staffAccount.id,
           firstName: staffRole.staffAccount.firstName,
           lastName: staffRole.staffAccount.lastName,
           email: staffRole.staffAccount.email,
           organizationId: sessionData.organizationId,
-          role: staffRole.role as StaffRoleEnum,
+          role: staffRole.role,
         },
       };
     } catch (error) {

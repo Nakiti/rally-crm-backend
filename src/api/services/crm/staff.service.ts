@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { StaffAccount, StaffRole, Organization } from '../../../models/index.js';
 import { ApiError } from '../../../utils/ApiError.js';
-import type { StaffRoleEnum, StaffSession } from '../../types/express.types.js';
+import type { StaffRoleEnum, StaffSession } from '../../types/session.types.js';
 
 // Interface for staff invitation data
 export interface InviteStaffData {
