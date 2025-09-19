@@ -1,8 +1,8 @@
 import { Campaign } from '../../../models/index.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { removeUndefinedProps } from '../../../utils/removeUndefined.js';
-import { CrmCampaignRepository } from '../../repositories/crm/campaign.repository.js';
-import type { StaffSession } from '../../types/express.types.js';
+import { CrmCampaignRepository, type CampaignWithStats } from '../../repositories/crm/campaign.repository.js';
+import type { StaffSession } from '../../types/session.types.js';
 import type { CampaignCreationAttributes } from '../../../models/campaign.model.js';
 
 interface CreateCampaignData {
@@ -93,10 +93,10 @@ export const createCampaignForStaff = async (
 };
 
 /**
- * Get all campaigns for the organization
+ * Get all campaigns for the organization with donation statistics
  * @param staffSession - The authenticated staff session
  */
-export const getCampaignsForOrg = async (staffSession: StaffSession): Promise<Campaign[]> => {
+export const getCampaignsForOrg = async (staffSession: StaffSession): Promise<CampaignWithStats[]> => {
   try {
     // Create repository instance with staff session for authorization
     const campaignRepo = new CrmCampaignRepository(staffSession);
@@ -113,14 +113,14 @@ export const getCampaignsForOrg = async (staffSession: StaffSession): Promise<Ca
 };
 
 /**
- * Get a single campaign by ID for staff
+ * Get a single campaign by ID for staff with donation statistics
  * @param id - The campaign ID
  * @param staffSession - The authenticated staff session
  */
 export const getCampaignByIdForStaff = async (
   id: string,
   staffSession: StaffSession
-): Promise<Campaign> => {
+): Promise<CampaignWithStats> => {
   try {
     // Create repository instance with staff session for authorization
     const campaignRepo = new CrmCampaignRepository(staffSession);
@@ -210,7 +210,7 @@ export const getCampaignPageConfig = async (
       throw new ApiError(404, 'Campaign not found');
     }
     
-    return campaign.pageConfig;
+    return campaign.pageConfig || null;
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
@@ -242,5 +242,64 @@ export const updateCampaignPageConfig = async (
       throw error;
     }
     throw new ApiError(500, 'Failed to update campaign page configuration');
+  }
+};
+
+/**
+ * Get a single campaign by ID with available designations for staff
+ * @param id - The campaign ID
+ * @param staffSession - The authenticated staff session
+ */
+export const getCampaignByIdWithDesignationsForStaff = async (
+  id: string,
+  staffSession: StaffSession
+): Promise<Campaign> => {
+  try {
+    // Create repository instance with staff session for authorization
+    const campaignRepo = new CrmCampaignRepository(staffSession);
+    
+    // Use repository to get campaign with designations (includes authorization check)
+    const campaign = await campaignRepo.findByIdWithDesignations(id);
+    
+    if (!campaign) {
+      throw new ApiError(404, 'Campaign not found');
+    }
+    
+    return campaign;
+  } catch (error) {
+    console.log(error)
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, 'Failed to fetch campaign');
+  }
+};
+
+/**
+ * Get a single campaign by ID with questions for staff
+ * @param id - The campaign ID
+ * @param staffSession - The authenticated staff session
+ */
+export const getCampaignByIdWithQuestionsForStaff = async (
+  id: string,
+  staffSession: StaffSession
+): Promise<Campaign> => {
+  try {
+    // Create repository instance with staff session for authorization
+    const campaignRepo = new CrmCampaignRepository(staffSession);
+    
+    // Use repository to get campaign with questions (includes authorization check)
+    const campaign = await campaignRepo.findByIdWithQuestions(id);
+    
+    if (!campaign) {
+      throw new ApiError(404, 'Campaign not found');
+    }
+    
+    return campaign;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, 'Failed to fetch campaign with questions');
   }
 };

@@ -32,6 +32,11 @@ export const isStaffAuthenticated = async (
     // 2. Verify the token and decode the payload
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as unknown as StaffJwtPayload;
 
+    // 2.1. Validate the decoded payload has required fields
+    if (!decoded.staffAccountId || !decoded.organizationId || !decoded.role) {
+      throw new ApiError(401, 'Invalid token payload. Missing required fields.');
+    }
+
     // 3. --- THE CRITICAL NEW STEP: Verify Membership ---
     // Instead of just fetching the user, we now check the `staff_roles` table
     // to confirm that this user is an active member of the organization
@@ -42,11 +47,14 @@ export const isStaffAuthenticated = async (
         organizationId: decoded.organizationId,
       },
       // Include the full StaffAccount details
-      include: [StaffAccount],
+      include: [{ model: StaffAccount, as: 'staffAccount' }],
     });
 
+    console.log("staffrole", staffRole)
+    const staffRoleData = staffRole?.toJSON() as any
+
     // 4. Check if the membership role exists
-    if (!staffRole || !staffRole.staffAccount) {
+    if (!staffRoleData || !staffRoleData.staffAccount) {
       throw new ApiError(403, 'Access denied. You are not a member of this organization.');
     }
 
@@ -54,13 +62,13 @@ export const isStaffAuthenticated = async (
     // This gives our controllers all the information they need:
     // the user's global identity AND their session-specific role and organization.
     (req).user = {
-      id: staffRole.staffAccountId,
-      firstName: staffRole.staffAccount?.firstName,
-      lastName: staffRole.staffAccount?.lastName,
-      email: staffRole.staffAccount?.email,
+      id: staffRoleData.staffAccountId,
+      firstName: staffRoleData.staffAccount?.firstName,
+      lastName: staffRoleData.staffAccount?.lastName,
+      email: staffRoleData.staffAccount?.email,
       // Session-specific context:
-      organizationId: staffRole.organizationId,
-      role: staffRole.role as StaffRoleEnum,
+      organizationId: staffRoleData.organizationId,
+      role: staffRoleData.role as StaffRoleEnum,
     };
 
     // 6. Pass control to the next handler

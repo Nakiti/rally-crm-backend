@@ -202,7 +202,7 @@ export class PublicAuthService {
       // Create the JWT payload
       const jwtPayload = {
         staffAccountId: staffAccountData.id,
-        organizationId: organization.id,
+        organizationId: organizationData.id,
         role: staffRole.role,
       };
 
@@ -218,7 +218,7 @@ export class PublicAuthService {
           firstName: staffAccountData.firstName,
           lastName: staffAccountData.lastName,
           email: staffAccountData.email,
-          organizationId: organization.id,
+          organizationId: organizationData.id,
           role: staffRole.role,
         },
       };

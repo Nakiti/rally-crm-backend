@@ -121,3 +121,59 @@ export const getPageConfigSchema = z.object({
       .uuid('Campaign ID must be a valid UUID')
   })
 });
+
+// Update campaign designations validation schema
+export const updateCampaignDesignationsSchema = z.object({
+  params: z.object({
+    id: z.string()
+      .uuid('Campaign ID must be a valid UUID')
+  }),
+  
+  body: z.object({
+    designationIds: z.array(z.string().uuid('Each designation ID must be a valid UUID'))
+      .min(0, 'Designation IDs array cannot be negative')
+      .max(100, 'Cannot have more than 100 designations per campaign')
+  })
+});
+
+// Update campaign questions validation schema
+export const updateCampaignQuestionsSchema = z.object({
+  params: z.object({
+    id: z.string()
+      .uuid('Campaign ID must be a valid UUID')
+  }),
+  
+  body: z.object({
+    questions: z.array(z.object({
+      id: z.string().uuid('Question ID must be a valid UUID').optional(),
+      questionText: z.string()
+        .min(1, 'Question text is required')
+        .max(500, 'Question text must be less than 500 characters'),
+      questionType: z.enum([
+        'text',
+        'textarea', 
+        'email',
+        'phone',
+        'number',
+        'select',
+        'radio',
+        'checkbox',
+        'date',
+        'url'
+      ], {
+        message: 'Question type must be one of: text, textarea, email, phone, number, select, radio, checkbox, date, url'
+      }),
+      options: z.array(z.object({
+        label: z.string().min(1, 'Option label is required'),
+        value: z.string().min(1, 'Option value is required')
+      })).optional(),
+      isRequired: z.boolean().optional().default(false),
+      displayOrder: z.number()
+        .int('Display order must be an integer')
+        .min(0, 'Display order must be a positive number')
+        .optional().default(0)
+    }))
+      .min(0, 'Questions array cannot be negative')
+      .max(50, 'Cannot have more than 50 questions per campaign')
+  })
+});

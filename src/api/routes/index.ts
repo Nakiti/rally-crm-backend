@@ -6,6 +6,7 @@ import crmCampaignRoutes from "./crm/campaign.routes.js"
 import crmDonationRoutes from "./crm/donations.routes.js"
 import crmDonorRoutes from "./crm/donors.routes.js"
 import crmDesignationRoutes from "./crm/designation.routes.js"
+import crmCampaignAvailableDesignationRoutes from "./crm/campaignAvailableDesignation.routes.js"
 import publicOrganizationRoutes from "./public/organization.routes.js"
 import publicAuthRoutes from "./public/auth.routes.js"
 import publicCampaignRoutes from "./public/campaign.routes.js"
@@ -16,10 +17,11 @@ const mainCrmRouter = Router();
 mainCrmRouter.use("/organization", crmOrganizationRoutes)
 mainCrmRouter.use("/staff", crmStaffRoutes)
 mainCrmRouter.use("/", crmUserRoutes)
-mainCrmRouter.use("/campaign", crmCampaignRoutes)
+mainCrmRouter.use("/campaigns", crmCampaignRoutes)
 mainCrmRouter.use("/donations", crmDonationRoutes)
 mainCrmRouter.use("/donors", crmDonorRoutes)
 mainCrmRouter.use("/designations", crmDesignationRoutes)
+mainCrmRouter.use("/campaignAvailableDesignations", crmCampaignAvailableDesignationRoutes)
 
 const mainPublicRouter = Router()
 mainPublicRouter.use("/organization", publicOrganizationRoutes)

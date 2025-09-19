@@ -6,6 +6,15 @@ import {
 } from '../../services/public/auth.service.js';
 import { ApiError } from '../../../utils/ApiError.js';
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const, // Or 'strict'
+  maxAge: 24 * 60 * 60 * 1000, // 1 day
+  path: '/', // Crucial: make it available site-wide
+  // Domain is intentionally omitted for better reliability in development
+};
+
 /**
  * Sign up a new organization with the first admin user
  * POST /api/public/auth/signup
@@ -121,15 +130,6 @@ export const logIn = async (
     const result = await logInService(loginData);
 
     // Set the JWT token as an HTTP-only cookie
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-      path: '/', // Ensure cookie is available for all paths
-      domain: process.env.NODE_ENV === 'production' ? undefined : 'localhost' // Set domain for development
-    };
-
     res.cookie('auth_token', result.token, cookieOptions);
     
     console.log('Setting cookie with options:', cookieOptions);
@@ -169,13 +169,6 @@ export const createSession = async (
 
     const sessionData = { organizationId, staffAccountId };
     const result = await createSessionService(sessionData);
-
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
-    };
 
     res.cookie('auth_token', result.token, cookieOptions as any)
     

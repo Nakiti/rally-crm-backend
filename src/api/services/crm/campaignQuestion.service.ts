@@ -134,3 +134,90 @@ export const updateQuestion = (staffSession: StaffSession, questionId: string, d
 export const deleteQuestion = (staffSession: StaffSession, questionId: string) =>
   crmCampaignQuestionService.deleteQuestion(staffSession, questionId);
 
+// Interface for bulk questions update data
+interface BulkUpdateQuestionsData {
+  id?: string; // For updates
+  questionText: string;
+  questionType: string;
+  options?: object;
+  isRequired?: boolean;
+  displayOrder?: number;
+}
+
+// Interface for bulk update result
+interface BulkUpdateResult {
+  added: number;
+  updated: number;
+  removed: number;
+  total: number;
+}
+
+/**
+ * Update campaign questions in bulk
+ * @param staffSession - The authenticated staff session
+ * @param campaignId - The campaign ID
+ * @param questions - Array of questions to update
+ * @returns Result of the bulk update operation
+ */
+export const updateCampaignQuestions = async (
+  staffSession: StaffSession,
+  campaignId: string,
+  questions: BulkUpdateQuestionsData[]
+): Promise<BulkUpdateResult> => {
+  try {
+    // Instantiate the repository with staffSession
+    const campaignQuestionRepo = new CrmCampaignQuestionRepository(staffSession);
+    
+    // Get existing questions for this campaign
+    const existingQuestions = await campaignQuestionRepo.findAllForCampaign(campaignId);
+    const existingQuestionIds = new Set(existingQuestions.map(q => q.id));
+    
+    const newQuestionIds = new Set(questions.filter(q => q.id).map(q => q.id!));
+    
+    // Questions to remove (exist in DB but not in new array)
+    const questionsToRemove = existingQuestions.filter(q => !newQuestionIds.has(q.id));
+    
+    // Questions to add (no ID in new array)
+    const questionsToAdd = questions.filter(q => !q.id);
+    
+    // Questions to update (have ID and exist in new array)
+    const questionsToUpdate = questions.filter(q => q.id && existingQuestionIds.has(q.id));
+    
+    let added = 0;
+    let updated = 0;
+    let removed = 0;
+    
+    // Remove questions
+    for (const question of questionsToRemove) {
+      await campaignQuestionRepo.delete(question.id);
+      removed++;
+    }
+    
+    // Add new questions
+    for (const questionData of questionsToAdd) {
+      const { id, ...data } = questionData;
+      await campaignQuestionRepo.create(campaignId, data);
+      added++;
+    }
+    
+    // Update existing questions
+    for (const questionData of questionsToUpdate) {
+      const { id, ...data } = questionData;
+      await campaignQuestionRepo.update(id!, data);
+      updated++;
+    }
+    
+    return {
+      added,
+      updated,
+      removed,
+      total: questions.length
+    };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, 'Failed to update campaign questions');
+  }
+};
+

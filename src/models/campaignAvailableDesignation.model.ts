@@ -1,4 +1,4 @@
-import { DataTypes, Model, UUIDV4 } from 'sequelize';
+import { DataTypes, Model, UUIDV4, type Optional } from 'sequelize';
 import sequelize from '../config/database.js';
 
 interface CampaignAvailableDesignationAttributes {
@@ -7,7 +7,9 @@ interface CampaignAvailableDesignationAttributes {
     designationId: string;
 }
 
-class CampaignAvailableDesignation extends Model<CampaignAvailableDesignationAttributes> implements CampaignAvailableDesignationAttributes {
+export interface CampaignAvailableDesignationCreationAttributes extends Optional<CampaignAvailableDesignationAttributes, "id"> {}
+
+class CampaignAvailableDesignation extends Model<CampaignAvailableDesignationAttributes, CampaignAvailableDesignationCreationAttributes> implements CampaignAvailableDesignationAttributes {
     public id!: string;
     public campaignId!: string;
     public designationId!: string;
