@@ -11,6 +11,7 @@ interface CampaignAttributes {
     goalAmount?: number;
     icon?: string;
     pageConfig?: object;
+    settings?: object;
     isActive: boolean
 
 }
@@ -27,6 +28,7 @@ class Campaign extends Model<CampaignAttributes, CampaignCreationAttributes> imp
     public goalAmount!: number;
     public icon!: string;
     public pageConfig!: object;
+    public settings!: object;
     public isActive!: boolean;
 
     public readonly createdAt!: Date;
@@ -77,6 +79,10 @@ Campaign.init({
         allowNull: true
     },
     pageConfig: {
+        type: DataTypes.JSON,
+        allowNull: true
+    },
+    settings: {
         type: DataTypes.JSON,
         allowNull: true
     },

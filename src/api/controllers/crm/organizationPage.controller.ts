@@ -1,0 +1,239 @@
+import type { Request, Response, NextFunction } from 'express';
+import {
+  createOrganizationPageForStaff,
+  getOrganizationPagesForOrg,
+  getOrganizationPageByIdForStaff,
+  getOrganizationPageByTypeForStaff,
+  updateOrganizationPageForStaff,
+  deleteOrganizationPageForStaff,
+  getOrganizationPageContentConfig as getOrganizationPageContentConfigService,
+  updateOrganizationPageContentConfig as updateOrganizationPageContentConfigService
+} from '../../services/crm/organizationPage.service.js';
+import type { AuthenticatedRequest } from '../../types/express.types.js';
+import type { StaffSession } from '../../types/session.types.js';
+import { ApiError } from '../../../utils/ApiError.js';
+
+/**
+ * Create a new organization page for the authenticated staff member's organization
+ * POST /api/crm/organization-pages
+ */
+export const createOrganizationPage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const pageData = req.body;
+    const staffSession = (req as AuthenticatedRequest).user as StaffSession;
+
+    const page = await createOrganizationPageForStaff(pageData, staffSession);
+    
+    res.status(201).json({
+      success: true,
+      data: page,
+      message: 'Organization page created successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get all organization pages for the authenticated staff member's organization
+ * GET /api/crm/organization-pages
+ */
+export const getOrganizationPages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const staffSession = (req as AuthenticatedRequest).user as StaffSession;
+
+    const pages = await getOrganizationPagesForOrg(staffSession);
+    
+    res.status(200).json({
+      success: true,
+      data: pages,
+      message: 'Organization pages retrieved successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get a single organization page by ID for the authenticated staff member
+ * GET /api/crm/organization-pages/:id
+ */
+export const getOrganizationPageById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const staffSession = (req as AuthenticatedRequest).user as StaffSession;
+    
+    if (!id) {
+      throw new ApiError(400, 'Organization page ID is required');
+    }
+
+    const page = await getOrganizationPageByIdForStaff(id, staffSession);
+
+    res.status(200).json({
+      success: true,
+      data: page,
+      message: 'Organization page retrieved successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get a single organization page by page type for the authenticated staff member
+ * GET /api/crm/organization-pages/type/:pageType
+ */
+export const getOrganizationPageByType = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { pageType } = req.params;
+    const staffSession = (req as AuthenticatedRequest).user as StaffSession;
+    
+    if (!pageType) {
+      throw new ApiError(400, 'Page type is required');
+    }
+
+    const page = await getOrganizationPageByTypeForStaff(pageType, staffSession);
+
+    res.status(200).json({
+      success: true,
+      data: page,
+      message: 'Organization page retrieved successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update an organization page for the authenticated staff member
+ * PUT /api/crm/organization-pages/:id
+ */
+export const updateOrganizationPage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    const staffSession = (req as AuthenticatedRequest).user as StaffSession;
+    
+    if (!id) {
+      throw new ApiError(400, 'Organization page ID is required');
+    }
+
+    const page = await updateOrganizationPageForStaff(id, updateData, staffSession);
+    
+    res.status(200).json({
+      success: true,
+      data: page,
+      message: 'Organization page updated successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete an organization page for the authenticated staff member
+ * DELETE /api/crm/organization-pages/:id
+ */
+export const deleteOrganizationPage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const staffSession = (req as AuthenticatedRequest).user as StaffSession;
+    
+    if (!id) {
+      throw new ApiError(400, 'Organization page ID is required');
+    }
+
+    await deleteOrganizationPageForStaff(id, staffSession);
+    
+    res.status(200).json({
+      success: true,
+      data: null,
+      message: 'Organization page deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get organization page content configuration
+ * GET /api/crm/organization-pages/:id/content-config
+ */
+export const getOrganizationPageContentConfig = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const staffSession = (req as AuthenticatedRequest).user as StaffSession;
+    
+    if (!id) {
+      throw new ApiError(400, 'Organization page ID is required');
+    }
+
+    const contentConfig = await getOrganizationPageContentConfigService(id, staffSession);
+    
+    res.status(200).json({
+      success: true,
+      data: contentConfig,
+      message: 'Organization page content configuration retrieved successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update organization page content configuration
+ * PUT /api/crm/organization-pages/:id/content-config
+ */
+export const updateOrganizationPageContentConfig = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { contentConfig } = req.body;
+    const staffSession = (req as AuthenticatedRequest).user as StaffSession;
+    
+    if (!id) {
+      throw new ApiError(400, 'Organization page ID is required');
+    }
+
+    const page = await updateOrganizationPageContentConfigService(id, contentConfig, staffSession);
+    
+    res.status(200).json({
+      success: true,
+      data: page,
+      message: 'Organization page content configuration updated successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
