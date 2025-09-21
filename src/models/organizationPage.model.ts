@@ -6,7 +6,7 @@ interface OrganizationPageAttributes {
     organizationId: string;
     pageType: string;
     contentConfig: object;
-
+    isPublished: boolean
 }
 
 class OrganizationPage extends Model<OrganizationPageAttributes> implements OrganizationPageAttributes {
@@ -14,6 +14,8 @@ class OrganizationPage extends Model<OrganizationPageAttributes> implements Orga
     public organizationId!: string;
     public contentConfig!: object;
     public pageType!: string;
+    public isPublished!: boolean
+
 
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
@@ -40,6 +42,11 @@ OrganizationPage.init({
     pageType: {
         type: DataTypes.ENUM('landing', 'about'),
         allowNull: false,
+    },
+    isPublished: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
     }
 }, {
     tableName: "organization_pages",

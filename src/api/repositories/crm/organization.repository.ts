@@ -3,6 +3,8 @@ import { ApiError } from '../../../utils/ApiError.js';
 import type { StaffSession } from '../../types/session.types.js';
 import { Op } from 'sequelize';
 
+//refactor to not need id paramter and just use userId
+
 /**
  * A repository for handling all database operations for Organizations
  * in the context of the CRM.

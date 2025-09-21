@@ -2,6 +2,7 @@ import { Organization } from '../../../models/index.js';
 import { ApiError } from "../../../utils/ApiError.js"
 import { CrmOrganizationRepository } from '../../repositories/crm/organization.repository.js';
 import type { StaffSession } from '../../types/session.types.js';
+import { createDefaultOrganizationPages } from './organizationPage.service.js';
 
 interface CreateOrganizationData {
     name: string;
@@ -25,9 +26,18 @@ export const createOrganization = async (data: CreateOrganizationData): Promise<
         // Create repository instance without user context for creation
         const orgRepo = new CrmOrganizationRepository();
         
-
         // Use repository to create organization
         const organization = await orgRepo.create(data);
+        
+        // After successful organization creation, create default organization pages
+        try {
+            await createDefaultOrganizationPages(organization.id);
+        } catch (pageError) {
+            // Log the error but don't fail the organization creation
+            // The organization was successfully created, pages can be created later
+            console.error('Failed to create default organization pages:', pageError);
+        }
+        
         return organization;
     } catch (error) {
         if (error instanceof ApiError) {

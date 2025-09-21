@@ -132,6 +132,7 @@ export class CrmOrganizationPageRepository {
   public async update(id: string, updateData: {
     pageType?: string;
     contentConfig?: object;
+    isPublished?: boolean;
   }): Promise<OrganizationPage> {
     // Check if the repository was initialized with a user context
     if (!this.user || !this.user.organizationId) {

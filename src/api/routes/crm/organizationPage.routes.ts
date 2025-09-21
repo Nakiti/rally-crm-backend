@@ -7,7 +7,8 @@ import {
   updateOrganizationPage,
   deleteOrganizationPage,
   getOrganizationPageContentConfig,
-  updateOrganizationPageContentConfig
+  updateOrganizationPageContentConfig,
+  publishOrganizationPage
 } from '../../controllers/crm/organizationPage.controller.js';
 import { validate } from '../../middleware/validate.js';
 import { isStaffAuthenticated } from '../../middleware/isStaffAuthenticated.js';
@@ -20,6 +21,7 @@ import {
   deleteOrganizationPageSchema,
   updateContentConfigSchema,
   getContentConfigSchema,
+  publishOrganizationPageSchema,
 } from './organizationPage.schemas.js';
 
 const router = Router();
@@ -82,5 +84,13 @@ router.get('/:id/content-config', hasRole(['admin', 'editor']), validate(getCont
  * @access  Private (Admin, Editor)
  */
 router.put('/:id/content-config', hasRole(['admin', 'editor']), validate(updateContentConfigSchema), updateOrganizationPageContentConfig);
+
+
+/**
+ * @route   PATCH /api/crm/organization-pages/:pageSlug/publish
+ * @desc    Publish organization page - updates content config and sets is_published to true
+ * @access  Private (Admin, Editor)
+ */
+router.patch('/:pageSlug/publish', hasRole(['admin', 'editor']), validate(publishOrganizationPageSchema), publishOrganizationPage);
 
 export default router;

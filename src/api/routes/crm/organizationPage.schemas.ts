@@ -77,3 +77,20 @@ export const getContentConfigSchema = z.object({
       .uuid('Organization page ID must be a valid UUID')
   })
 });
+
+// Publish organization page validation schema
+export const publishOrganizationPageSchema = z.object({
+  params: z.object({
+    pageSlug: z.enum(['landing', 'about'], {
+      message: 'Page slug must be either "landing" or "about"'
+    })
+  }),
+  
+  body: z.object({
+    contentConfig: z.record(z.string(), z.any())
+      .refine(
+        (config) => typeof config === 'object' && config !== null,
+        'Content config must be an object'
+      )
+  })
+});

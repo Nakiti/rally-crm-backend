@@ -7,7 +7,8 @@ import {
   updateOrganizationPageForStaff,
   deleteOrganizationPageForStaff,
   getOrganizationPageContentConfig as getOrganizationPageContentConfigService,
-  updateOrganizationPageContentConfig as updateOrganizationPageContentConfigService
+  updateOrganizationPageContentConfig as updateOrganizationPageContentConfigService,
+  publishOrganizationPage as publishOrganizationPageService
 } from '../../services/crm/organizationPage.service.js';
 import type { AuthenticatedRequest } from '../../types/express.types.js';
 import type { StaffSession } from '../../types/session.types.js';
@@ -232,6 +233,36 @@ export const updateOrganizationPageContentConfig = async (
       success: true,
       data: page,
       message: 'Organization page content configuration updated successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Publish organization page - updates content config and sets is_published to true
+ * PATCH /api/crm/organization-pages/:pageSlug/publish
+ */
+export const publishOrganizationPage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { pageSlug } = req.params;
+    const { contentConfig } = req.body;
+    const staffSession = (req as AuthenticatedRequest).user as StaffSession;
+    
+    if (!pageSlug) {
+      throw new ApiError(400, 'Page slug is required');
+    }
+
+    const page = await publishOrganizationPageService(pageSlug, contentConfig, staffSession);
+    
+    res.status(200).json({
+      success: true,
+      data: page,
+      message: 'Organization page published successfully'
     });
   } catch (error) {
     next(error);
