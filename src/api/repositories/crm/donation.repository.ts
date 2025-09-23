@@ -215,6 +215,53 @@ export class CrmDonationRepository {
   }
 
   /**
+   * Fetches recent donations for the organization
+   * @param limit - Maximum number of donations to return (default: 5)
+   * @returns Array of recent donations with basic details
+   */
+  public async findRecentForOrg(limit: number = 5): Promise<Array<{
+    id: string;
+    donorName: string;
+    campaignName: string;
+    amount: number;
+    donatedAt: Date;
+  }>> {
+    try {
+      const donations = await Donation.findAll({
+        where: {
+          organizationId: this.staffSession.organizationId,
+          status: 'completed'
+        },
+        include: [
+          {
+            association: 'campaign',
+            attributes: ['id', 'externalName', 'internalName']
+          },
+          {
+            association: 'donorAccount',
+            attributes: ['id', 'firstName', 'lastName']
+          }
+        ],
+        order: [['createdAt', 'DESC']],
+        limit: limit
+      });
+
+      // Transform the results to match the expected format
+      return donations.map(donation => ({
+        id: donation.id,
+        donorName: donation.donorAccount 
+          ? `${donation.donorAccount.firstName} ${donation.donorAccount.lastName}`
+          : 'Anonymous',
+        campaignName: donation.campaign?.externalName || donation.campaign?.internalName || 'Unknown Campaign',
+        amount: donation.amount,
+        donatedAt: donation.createdAt
+      }));
+    } catch (error: any) {
+      throw new ApiError(500, 'Failed to fetch recent donations from database.');
+    }
+  }
+
+  /**
    * Fetches a single donation by ID, scoped to the organization
    * @param id - The donation ID
    * @returns Single donation with full details including answers

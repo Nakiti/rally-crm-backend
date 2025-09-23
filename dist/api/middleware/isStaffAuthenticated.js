@@ -1,0 +1,62 @@
+import jwt from 'jsonwebtoken';
+import { StaffAccount, StaffRole } from '../../models/index.js';
+import { ApiError } from '../../utils/ApiError.js';
+/**
+ * Middleware to authenticate staff users via a session-aware JWT.
+ * It verifies the token, confirms the user is a member of the specified organization,
+ * and attaches a rich user context to the request.
+ */
+export const isStaffAuthenticated = async (req, res, next) => {
+    try {
+        // 1. Check for and extract the token
+        const token = req.cookies.auth_token;
+        if (!token) {
+            throw new ApiError(401, 'Authentication token is required.');
+        }
+        // 2. Verify the token and decode the payload
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // 2.1. Validate the decoded payload has required fields
+        if (!decoded.staffAccountId || !decoded.organizationId || !decoded.role) {
+            throw new ApiError(401, 'Invalid token payload. Missing required fields.');
+        }
+        // 3. --- THE CRITICAL NEW STEP: Verify Membership ---
+        // Instead of just fetching the user, we now check the `staff_roles` table
+        // to confirm that this user is an active member of the organization
+        // they claim to be working in via their JWT.
+        const staffRole = await StaffRole.findOne({
+            where: {
+                staffAccountId: decoded.staffAccountId,
+                organizationId: decoded.organizationId,
+            },
+            // Include the full StaffAccount details
+            include: [{ model: StaffAccount, as: 'staffAccount' }],
+        });
+        // console.log("staffrole", staffRole)
+        const staffRoleData = staffRole?.toJSON();
+        // 4. Check if the membership role exists
+        if (!staffRoleData || !staffRoleData.staffAccount) {
+            throw new ApiError(403, 'Access denied. You are not a member of this organization.');
+        }
+        // 5. Attach a rich, combined user object to the request.
+        // This gives our controllers all the information they need:
+        // the user's global identity AND their session-specific role and organization.
+        (req).user = {
+            id: staffRoleData.staffAccountId,
+            firstName: staffRoleData.staffAccount?.firstName,
+            lastName: staffRoleData.staffAccount?.lastName,
+            email: staffRoleData.staffAccount?.email,
+            // Session-specific context:
+            organizationId: staffRoleData.organizationId,
+            role: staffRoleData.role,
+        };
+        // 6. Pass control to the next handler
+        next();
+    }
+    catch (error) {
+        if (error instanceof jwt.JsonWebTokenError) {
+            return next(new ApiError(401, 'Invalid or expired authentication token.'));
+        }
+        next(error);
+    }
+};
+//# sourceMappingURL=isStaffAuthenticated.js.map

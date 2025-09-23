@@ -49,10 +49,10 @@ export const getPublicCampaign = async (
 };
 
 /**
- * Create a donation for a campaign
- * POST /api/public/campaigns/:slug/donations
+ * Create a Stripe checkout session for a campaign donation
+ * POST /api/public/campaigns/:slug/checkout
  */
-export const createDonation = async (
+export const createDonationCheckout = async (
   req: PublicRequest,
   res: Response,
   next: NextFunction
@@ -61,7 +61,7 @@ export const createDonation = async (
     // Parse subdomain and slug
     const subdomain = req.subdomain || extractSubdomainFromHost(req.get('host') || '');
     const { slug } = req.params;
-    const donationData = req.body;
+    const { donationData, successUrl, cancelUrl } = req.body;
 
     if (!subdomain) {
       throw new ApiError(400, 'Subdomain is required');
@@ -71,14 +71,24 @@ export const createDonation = async (
       throw new ApiError(400, 'Campaign slug is required');
     }
 
-    // Create service instance and call the createDonationForCampaign service
-    const campaignService = new PublicCampaignService();
-    const result = await campaignService.createDonationForCampaign(subdomain, slug, donationData);
+    if (!successUrl || !cancelUrl) {
+      throw new ApiError(400, 'successUrl and cancelUrl are required');
+    }
 
-    res.status(201).json({
+    // Create service instance and call the createDonationCheckoutSession service
+    const campaignService = new PublicCampaignService();
+    const result = await campaignService.createDonationCheckoutSession(
+      subdomain, 
+      slug, 
+      donationData, 
+      successUrl, 
+      cancelUrl
+    );
+
+    res.status(200).json({
       success: true,
-      data: { message: result },
-      message: 'Donation created successfully'
+      data: result,
+      message: 'Checkout session created successfully'
     });
   } catch (error) {
     next(error);

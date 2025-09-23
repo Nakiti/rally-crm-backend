@@ -3,6 +3,7 @@ import { ApiError } from "../../../utils/ApiError.js"
 import { CrmOrganizationRepository } from '../../repositories/crm/organization.repository.js';
 import type { StaffSession } from '../../types/session.types.js';
 import { createDefaultOrganizationPages } from './organizationPage.service.js';
+import { OrganizationCompletenessService } from './organizationCompleteness.service.js';
 
 interface CreateOrganizationData {
     name: string;
@@ -65,6 +66,17 @@ export const updateOrganization = async (
         
         // Use repository to update organization (includes authorization check)
         const organization = await orgRepo.update(id, data);
+
+        // Trigger organization completeness check if Stripe account ID was updated
+        if (data.stripeAccountId !== undefined && staffUser.organizationId) {
+            try {
+                await OrganizationCompletenessService.checkAndSetOrganizationPublicStatus(staffUser.organizationId);
+            } catch (completenessError) {
+                // Log the error but don't fail the organization update
+                console.error('Failed to check organization completeness after Stripe account update:', completenessError);
+            }
+        }
+
         return organization;
     } catch (error) {
         if (error instanceof ApiError) {
@@ -103,7 +115,7 @@ export const getOrganizationById = async (id: string, staffUser: StaffSession): 
     try {
         // Create repository instance with user context for authorization
         const orgRepo = new CrmOrganizationRepository(staffUser);
-        
+        console.log("organization id", id)
         // Use repository to get organization (includes authorization check)
         const organization = await orgRepo.findById(id);
         

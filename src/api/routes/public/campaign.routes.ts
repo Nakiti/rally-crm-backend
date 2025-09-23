@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
   getPublicCampaign,
-  createDonation
+  createDonationCheckout
 } from '../../controllers/public/campaign.controller.js';
 import { validate } from '../../middleware/validate.js';
 import {
@@ -19,10 +19,10 @@ const router = Router();
 router.get('/:slug', validate(getCampaignBySlugSchema), getPublicCampaign);
 
 /**
- * @route   POST /api/public/campaigns/:slug/donations
- * @desc    Create a donation for a campaign
+ * @route   POST /api/public/campaigns/:slug/checkout
+ * @desc    Create a Stripe checkout session for a campaign donation
  * @access  Public
  */
-router.post('/:slug/donations', validate(createDonationSchema), createDonation);
+router.post('/:slug/checkout', validate(createDonationSchema), createDonationCheckout);
 
 export default router;

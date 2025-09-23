@@ -68,7 +68,6 @@ Campaign.init({
     slug: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        unique: true
     },
     goalAmount: {
         type: DataTypes.DECIMAL(10, 2),
@@ -94,7 +93,14 @@ Campaign.init({
 }, {
     tableName: "campaigns",
     sequelize,
-    underscored: true
+    underscored: true,
+    indexes: [
+        {
+        unique: true,
+        fields: ['slug'],
+        name: 'unique_slug'
+        }
+    ]
 })
 
 export {Campaign}

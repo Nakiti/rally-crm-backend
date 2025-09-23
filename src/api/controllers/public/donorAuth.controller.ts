@@ -3,6 +3,15 @@ import { registerOrClaimAccount, logIn as logInService } from '../../services/pu
 import { getOrganizationBySubdomain } from '../../services/public/organization.service.js';
 import { ApiError } from '../../../utils/ApiError.js';
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const, // Or 'strict'
+  maxAge: 24 * 60 * 60 * 1000, // 1 day
+  path: '/', // Crucial: make it available site-wide
+  // Domain is intentionally omitted for better reliability in development
+};
+
 // Extend Request interface to include subdomain
 interface PublicRequest extends Request {
   subdomain?: string;
@@ -53,10 +62,13 @@ export const signUp = async (
     // Call the registerOrClaimAccount service, passing the organizationId and req.body
     const result = await registerOrClaimAccount(organizationId, req.body);
     
-    // Send the returned JWT in the response
+    // Set the JWT token as an HTTP-only cookie
+    res.cookie('auth_token', result.token, cookieOptions);
+    
+    // Send the donor info in the response (without the token)
     res.status(201).json({
       success: true,
-      data: result,
+      data: { donor: result.donor },
       message: 'Donor account registered successfully'
     });
   } catch (error) {
@@ -88,11 +100,36 @@ export const logIn = async (
     // Call the logIn service with the organizationId and req.body
     const result = await logInService(organizationId, req.body);
     
-    // Send the returned JWT in the response
+    // Set the JWT token as an HTTP-only cookie
+    res.cookie('auth_token', result.token, cookieOptions);
+    
+    // Send the donor info in the response (without the token)
     res.status(200).json({
       success: true,
-      data: result,
+      data: { donor: result.donor },
       message: 'Login successful'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Log out the current donor by clearing the authentication cookie
+ * POST /api/public/donor-auth/logout
+ */
+export const logOut = async (
+  req: PublicRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    // Clear the authentication cookie
+    res.clearCookie('auth_token');
+    
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully'
     });
   } catch (error) {
     next(error);

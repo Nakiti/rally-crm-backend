@@ -177,3 +177,32 @@ export const updateCampaignQuestionsSchema = z.object({
       .max(50, 'Cannot have more than 50 questions per campaign')
   })
 });
+
+// Get top campaigns validation schema
+export const getTopCampaignsSchema = z.object({
+  query: z.object({
+    period: z.enum(['week', 'month', 'year'])
+      .optional()
+      .default('month'),
+    limit: z.string()
+      .optional()
+      .transform((val) => val ? parseInt(val, 10) : 3)
+      .refine((val) => val >= 1 && val <= 20, 'Limit must be between 1 and 20')
+  })
+});
+
+// Publish campaign validation schema
+export const publishCampaignSchema = z.object({
+  params: z.object({
+    id: z.string()
+      .uuid('Campaign ID must be a valid UUID')
+  }),
+  
+  body: z.object({
+    pageConfig: z.record(z.string(), z.any())
+      .refine(
+        (config) => typeof config === 'object' && config !== null,
+        'Page config must be an object'
+      )
+  })
+});

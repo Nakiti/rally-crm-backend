@@ -1,0 +1,198 @@
+import { createOrganization, updateOrganization as updateOrganizationService, getOrganizationById } from '../../services/crm/organization.service.js';
+import { ApiError } from '../../../utils/ApiError.js';
+/**
+ * Create a new organization
+ * POST /api/organizations
+ */
+export const createNewOrganization = async (req, res, next) => {
+    try {
+        const { name, subdomain, stripeAccountId, settings } = req.body;
+        const organizationData = {
+            name,
+            subdomain,
+            stripeAccountId,
+            settings
+        };
+        const organization = await createOrganization(organizationData);
+        res.status(201).json({
+            success: true,
+            data: organization,
+            message: 'Organization created successfully'
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+/**
+ * Get organization by ID (with authorization check)
+ * GET /api/organizations/:id
+ */
+export const getOrganization = async (req, res, next) => {
+    try {
+        // Check if user is authenticated
+        if (!req.user) {
+            throw new ApiError(401, 'Authentication required');
+        }
+        const { id } = req.params;
+        if (!id) {
+            throw new ApiError(400, 'Organization ID is required');
+        }
+        const organization = await getOrganizationById(id, req.user);
+        res.status(200).json({
+            success: true,
+            data: organization,
+            message: 'Organization retrieved successfully'
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+/**
+ * Get current user's organization (with authorization check)
+ * GET /api/organizations/current
+ */
+export const getCurrentOrganization = async (req, res, next) => {
+    try {
+        // Check if user is authenticated
+        if (!req.user) {
+            throw new ApiError(401, 'Authentication required');
+        }
+        // Check if user has organizationId
+        if (!req.user.organizationId) {
+            throw new ApiError(400, 'User is not associated with any organization');
+        }
+        const organization = await getOrganizationById(req.user.organizationId, req.user);
+        res.status(200).json({
+            success: true,
+            data: organization,
+            message: 'Organization retrieved successfully'
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+/**
+ * Update organization (with authorization check)
+ * PUT /api/organizations/:id
+ */
+export const updateOrganization = async (req, res, next) => {
+    try {
+        if (!req.user) {
+            throw new ApiError(401, 'Authentication required');
+        }
+        const { id } = req.params;
+        const { name, subdomain, stripeAccountId, settings } = req.body;
+        if (!id) {
+            throw new ApiError(400, 'Organization ID is required');
+        }
+        const updateData = {
+            name,
+            subdomain,
+            stripeAccountId,
+            settings
+        };
+        // Remove undefined values
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+        const organization = await updateOrganizationService(id, updateData, req.user);
+        res.status(200).json({
+            success: true,
+            data: organization,
+            message: 'Organization updated successfully'
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+/**
+ * Update current user's organization (with authorization check)
+ * PUT /api/organizations/current
+ */
+export const updateCurrentOrganization = async (req, res, next) => {
+    try {
+        if (!req.user) {
+            throw new ApiError(401, 'Authentication required');
+        }
+        // Check if user has organizationId
+        if (!req.user.organizationId) {
+            throw new ApiError(400, 'User is not associated with any organization');
+        }
+        const { name, subdomain, stripeAccountId, settings } = req.body;
+        const updateData = {
+            name,
+            subdomain,
+            stripeAccountId,
+            settings
+        };
+        // Remove undefined values
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+        const organization = await updateOrganizationService(req.user.organizationId, updateData, req.user);
+        res.status(200).json({
+            success: true,
+            data: organization,
+            message: 'Organization updated successfully'
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+// /**
+//  * Delete organization (with authorization check)
+//  * DELETE /api/organizations/:id
+//  */
+// export const deleteOrganization = async (
+//   req: Request, 
+//   res: Response, 
+//   next: NextFunction
+// ): Promise<void> => {
+//   try {
+//     // Check if user is authenticated
+//     if (!req.user) {
+//       throw new ApiError(401, 'Authentication required');
+//     }
+//     const { id } = req.params;
+//     if (!id) {
+//       throw new ApiError(400, 'Organization ID is required');
+//     }
+//     await deleteOrganizationService(id, req.user);
+//     res.status(200).json({
+//       success: true,
+//       message: 'Organization deleted successfully'
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+// /**
+//  * Get all organizations (admin only)
+//  * GET /api/organizations
+//  */
+// export const getAllOrganizations = async (
+//   req: Request, 
+//   res: Response, 
+//   next: NextFunction
+// ): Promise<void> => {
+//   try {
+//     // Check if user is authenticated
+//     if (!req.user) {
+//       throw new ApiError(401, 'Authentication required');
+//     }
+//     // TODO: Add admin role check here
+//     // if (!req.user.isAdmin) {
+//     //   throw new ApiError(403, 'Admin access required');
+//     // }
+//     const organizations = await getAllOrganizationsService();
+//     res.status(200).json({
+//       success: true,
+//       data: organizations,
+//       message: 'Organizations retrieved successfully'
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+//# sourceMappingURL=organization.controller.js.map

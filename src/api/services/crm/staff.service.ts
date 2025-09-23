@@ -56,14 +56,20 @@ export class CrmStaffService {
         order: [['createdAt', 'ASC']]
       });
 
-      const staffMembers: StaffMemberInfo[] = staffRoles.map(role => ({
-        id: role.staffAccountId,
-        firstName: (role as any).staffAccount?.firstName || '',
-        lastName: (role as any).staffAccount?.lastName || '',
-        email: (role as any).staffAccount?.email || '',
-        role: role.role as StaffRoleEnum,
-        joinedAt: role.createdAt
-      }));
+      const staffMembers: StaffMemberInfo[] = staffRoles.map(role => {
+        // For composite primary key models, we need to use getDataValue or get({ plain: true })
+        // because the association properties aren't directly accessible
+        const rawData = role.get({ plain: true });
+        
+        return {
+          id: rawData.staffAccountId,
+          firstName: rawData.staffAccount?.firstName || '',
+          lastName: rawData.staffAccount?.lastName || '',
+          email: rawData.staffAccount?.email || '',
+          role: rawData.role as StaffRoleEnum,
+          joinedAt: rawData.createdAt
+        };
+      });
 
       return staffMembers;
     } catch (error) {

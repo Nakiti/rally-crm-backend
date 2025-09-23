@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { signUp, logIn } from '../../controllers/public/donorAuth.controller.js';
+import { signUp, logIn, logOut } from '../../controllers/public/donorAuth.controller.js';
 import { validate } from '../../middleware/validate.js';
 import { donorSignupSchema, donorLoginSchema } from './donorAuth.schemas.js';
 
@@ -18,6 +18,13 @@ router.post('/signup', validate(donorSignupSchema), signUp);
  * @access  Public
  */
 router.post('/login', validate(donorLoginSchema), logIn);
+
+/**
+ * @route   POST /api/public/donor-auth/logout
+ * @desc    Log out the current donor by clearing the authentication cookie
+ * @access  Public
+ */
+router.post('/logout', logOut);
 
 export default router;
 

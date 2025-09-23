@@ -75,49 +75,126 @@ export const getOrganization = async (
 };
 
 /**
+ * Get current user's organization (with authorization check)
+ * GET /api/organizations/current
+ */
+export const getCurrentOrganization = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
+  try {
+    // Check if user is authenticated
+    if (!req.user) {
+      throw new ApiError(401, 'Authentication required');
+    }
+
+    // Check if user has organizationId
+    if (!req.user.organizationId) {
+      throw new ApiError(400, 'User is not associated with any organization');
+    }
+    
+    const organization = await getOrganizationById(req.user.organizationId, req.user);
+    
+    res.status(200).json({
+      success: true,
+      data: organization,
+      message: 'Organization retrieved successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Update organization (with authorization check)
  * PUT /api/organizations/:id
  */
-// export const updateOrganization = async (
-//   req: Request, 
-//   res: Response, 
-//   next: NextFunction
-// ): Promise<void> => {
-//   try {
-//     if (!req.user) {
-//       throw new ApiError(401, 'Authentication required');
-//     }
+export const updateOrganization = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw new ApiError(401, 'Authentication required');
+    }
 
-//     const { id } = req.params;
-//     const { name, subdomain, stripeAccountId, settings } = req.body;
+    const { id } = req.params;
+    const { name, subdomain, stripeAccountId, settings } = req.body;
 
-//     if (!id) {
-//       throw new ApiError(400, 'Organization ID is required');
-//     }
+    if (!id) {
+      throw new ApiError(400, 'Organization ID is required');
+    }
 
-//     const updateData = {
-//       name,
-//       subdomain,
-//       stripeAccountId,
-//       settings
-//     } as any;
+    const updateData = {
+      name,
+      subdomain,
+      stripeAccountId,
+      settings
+    } as any;
 
-//     // Remove undefined values
-//     Object.keys(updateData).forEach(key => 
-//       updateData[key] === undefined && delete updateData[key]
-//     );
+    // Remove undefined values
+    Object.keys(updateData).forEach(key => 
+      updateData[key] === undefined && delete updateData[key]
+    );
 
-//     const organization = await updateOrganizationService(id, updateData, req.user);
+    const organization = await updateOrganizationService(id, updateData, req.user);
     
-//     res.status(200).json({
-//       success: true,
-//       data: organization,
-//       message: 'Organization updated successfully'
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
+    res.status(200).json({
+      success: true,
+      data: organization,
+      message: 'Organization updated successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update current user's organization (with authorization check)
+ * PUT /api/organizations/current
+ */
+export const updateCurrentOrganization = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw new ApiError(401, 'Authentication required');
+    }
+
+    // Check if user has organizationId
+    if (!req.user.organizationId) {
+      throw new ApiError(400, 'User is not associated with any organization');
+    }
+
+    const { name, subdomain, stripeAccountId, settings } = req.body;
+
+    const updateData = {
+      name,
+      subdomain,
+      stripeAccountId,
+      settings
+    } as any;
+
+    // Remove undefined values
+    Object.keys(updateData).forEach(key => 
+      updateData[key] === undefined && delete updateData[key]
+    );
+
+    const organization = await updateOrganizationService(req.user.organizationId, updateData, req.user);
+    
+    res.status(200).json({
+      success: true,
+      data: organization,
+      message: 'Organization updated successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // /**
 //  * Delete organization (with authorization check)

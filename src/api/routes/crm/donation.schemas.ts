@@ -47,6 +47,16 @@ export const getDonationsSchema = z.object({
   })
 });
 
+// Schema for getting recent donations
+export const getRecentDonationsSchema = z.object({
+  query: z.object({
+    limit: z.string()
+      .optional()
+      .transform((val) => val ? parseInt(val, 10) : 5)
+      .refine((val) => val >= 1 && val <= 50, 'Limit must be between 1 and 50')
+  })
+});
+
 // Schema for getting a specific donation by ID
 export const getDonationDetailsSchema = z.object({
   params: z.object({

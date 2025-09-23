@@ -1,14 +1,16 @@
 import { Router } from 'express';
 import {
   getDonations,
-  getDonationDetails
+  getDonationDetails,
+  getRecentDonations
 } from '../../controllers/crm/donation.controller.js';
 import { validate } from '../../middleware/validate.js';
 import { isStaffAuthenticated } from '../../middleware/isStaffAuthenticated.js';
 import { hasRole } from '../../middleware/hasRole.js';
 import {
   getDonationsSchema,
-  getDonationDetailsSchema
+  getDonationDetailsSchema,
+  getRecentDonationsSchema
 } from './donation.schemas.js';
 
 const router = Router();
@@ -23,6 +25,18 @@ router.get('/',
   hasRole(['admin', 'editor']), 
   validate(getDonationsSchema), 
   getDonations
+);
+
+/**
+ * @route   GET /api/crm/donations/recent
+ * @desc    Get recent donations for the organization
+ * @access  Private (Admin, Editor)
+ */
+router.get('/recent', 
+  isStaffAuthenticated, 
+  hasRole(['admin', 'editor']), 
+  validate(getRecentDonationsSchema), 
+  getRecentDonations
 );
 
 /**

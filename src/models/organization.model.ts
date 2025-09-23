@@ -8,6 +8,7 @@ interface OrganizationAttributes {
   subdomain: string;
   stripeAccountId?: string;
   settings?: object;
+  isPubliclyActive: boolean
 
   readonly createdAt?: Date;
   readonly updatedAt?: Date;
@@ -21,6 +22,7 @@ class Organization extends Model<OrganizationAttributes, OrganizationCreationAtt
   public subdomain!: string;
   public stripeAccountId!: string;
   public settings!: object;
+  public isPubliclyActive!: boolean;
 
   // Timestamps
   public readonly createdAt!: Date;
@@ -40,7 +42,6 @@ Organization.init({
   subdomain: {
     type: new DataTypes.STRING(255),
     allowNull: false,
-    unique: true,
   },
   stripeAccountId: {
     type: new DataTypes.STRING(255),
@@ -50,10 +51,22 @@ Organization.init({
     type: DataTypes.JSON,
     allowNull: true,
   },
+  isPubliclyActive: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
+  }
 }, {
   tableName: 'organizations',
   sequelize,
-  underscored: true
+  underscored: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['subdomain'],
+      name: 'unique_subdomain'
+    }
+  ]
 });
 
 export { Organization };

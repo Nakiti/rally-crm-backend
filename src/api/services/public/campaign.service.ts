@@ -1,7 +1,8 @@
-import { Campaign, Donation, DonorAccount, DonationAnswer } from '../../../models/index.js';
+import { Campaign, Donation, DonorAccount, DonationAnswer, Organization } from '../../../models/index.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import { PublicCampaignRepository } from '../../repositories/public/campaign.repository.js';
 import { PublicDonationRepository } from '../../repositories/public/donation.repository.js';
+import { StripeService } from '../crm/stripe.service.js';
 import sequelize from '../../../config/database.js';
 
 // Public-safe DTO interface for campaigns
@@ -70,21 +71,22 @@ export class PublicCampaignService {
   }
 
   /**
-   * Creates a donation for a campaign with complex transactional workflow
+   * Creates a Stripe checkout session for a campaign donation
    * @param subdomain - The organization's subdomain for tenancy
    * @param slug - The campaign slug
    * @param donationData - The donation data including donor info and answers
-   * @returns Promise<string> - Success message
+   * @returns Promise<{sessionId: string, successUrl: string, cancelUrl: string}> - Stripe session details
    */
-  public async createDonationForCampaign(
+  public async createDonationCheckoutSession(
     subdomain: string, 
     slug: string, 
-    donationData: DonationData
-  ): Promise<string> {
-    return await sequelize.transaction(async (t) => {
+    donationData: DonationData,
+    successUrl: string,
+    cancelUrl: string
+  ): Promise<{sessionId: string, successUrl: string, cancelUrl: string}> {
+    try {
       // Instantiate repositories
       const campaignRepo = new PublicCampaignRepository(subdomain);
-      const donationRepo = new PublicDonationRepository();
 
       // Verify the campaign's existence and active status
       const campaign = await campaignRepo.findBySlug(slug);
@@ -93,64 +95,37 @@ export class PublicCampaignService {
         throw new ApiError(404, 'Campaign not found or not active');
       }
 
-      // TODO: Integrate Stripe payment processing
-      // Create comments and empty funcs where stripe will be later integrated
-      const stripeChargeId = await this.processStripePayment(donationData.amount);
-      if (!stripeChargeId) {
-        throw new ApiError(400, 'Payment processing failed');
+      // Get organization to verify Stripe connection
+      const organization = await Organization.findByPk(campaign.organizationId);
+      if (!organization || !organization.stripeAccountId) {
+        throw new ApiError(400, 'Organization not connected to Stripe');
       }
 
-      // Use DonorAccount.findOrCreate to get a donor record, scoping by email and organizationId
-      const [donorAccount, created] = await DonorAccount.findOrCreate({
-        where: {
-          email: donationData.donor.email,
-          organizationId: campaign.organizationId
-        },
-        defaults: {
-          organizationId: campaign.organizationId,
-          firstName: donationData.donor.firstName,
-          lastName: donationData.donor.lastName,
-          email: donationData.donor.email,
-          passwordHash: 'guest_account' // Default for public donations
-        },
-        transaction: t
-      });
+      // Create Stripe service instance
+      const stripeService = new StripeService();
 
-      // Call the create method on PublicDonationRepository
-      const donation = await donationRepo.create({
-        organizationId: campaign.organizationId,
-        campaignId: campaign.id,
-        donorAccountId: donorAccount.id,
-        designationId: donationData.designationId,
-        amount: donationData.amount,
-        stripeChargeId: stripeChargeId,
-        status: 'completed'
-      }, t);
+      // Create checkout session
+      const sessionId = await stripeService.createDonationCheckoutSession(
+        donationData.amount,
+        campaign.id,
+        donationData.donor.email,
+        `${donationData.donor.firstName} ${donationData.donor.lastName}`,
+        campaign.organizationId,
+        successUrl,
+        cancelUrl
+      );
 
-      // If donationData.answers exists, format the data and use DonationAnswer.bulkCreate
-      if (donationData.answers && donationData.answers.length > 0) {
-        const donationAnswers = donationData.answers.map(answer => ({
-          donationId: donation.id,
-          questionId: answer.questionId,
-          answerValue: answer.answerValue
-        }));
-
-        await DonationAnswer.bulkCreate(donationAnswers, { transaction: t });
+      return {
+        sessionId,
+        successUrl,
+        cancelUrl
+      };
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
       }
-
-      return 'Donation created successfully';
-    });
+      throw new ApiError(500, 'Failed to create checkout session');
+    }
   }
 
-  /**
-   * Placeholder for Stripe payment processing
-   * @param amount - The donation amount
-   * @returns Promise<string> - Stripe charge ID
-   */
-  private async processStripePayment(amount: number): Promise<string> {
-    // TODO: Implement actual Stripe payment processing
-    // This is where Stripe integration will be added
-    // For now, return a placeholder charge ID
-    return `ch_placeholder_${Date.now()}`;
-  }
 }

@@ -52,6 +52,38 @@ export const getDonations = async (
 };
 
 /**
+ * Get recent donations for the organization
+ * GET /api/crm/donations/recent
+ */
+export const getRecentDonations = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    // Parse limit from query parameters
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 5;
+
+    // Validate limit parameter
+    if (isNaN(limit) || limit < 1 || limit > 50) {
+      res.status(400).json({
+        success: false,
+        message: 'Limit must be a number between 1 and 50'
+      });
+      return;
+    }
+
+    // Create service instance and call the service
+    const donationService = new CrmDonationService();
+    const recentDonations = await donationService.getRecentDonations((req).user, limit);
+    
+    res.status(200).json(recentDonations);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get detailed information about a specific donation
  * GET /api/crm/donations/:id
  */

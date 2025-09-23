@@ -183,7 +183,6 @@ export const getCurrentUser = async (
 ): Promise<void> => {
   try {
     const currentUser = await getCurrentUserService((req as AuthenticatedRequest).user);
-    console.log("current user", currentUser)
     res.status(200).json({
       success: true,
       data: currentUser,

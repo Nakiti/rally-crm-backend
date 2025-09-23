@@ -154,6 +154,7 @@ export class PublicAuthRepository {
       });
       return organization;
     } catch (error: any) {
+      console.log(error)
       throw new ApiError(500, 'Failed to find organization in database.');
     }
   }

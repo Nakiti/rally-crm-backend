@@ -9,12 +9,12 @@ interface StaffRoleAttributes {
     organizationId: string;
     role: string;
 }
-
+ 
 class StaffRole extends Model<StaffRoleAttributes> implements StaffRoleAttributes {
     public staffAccountId!: string;
     public organizationId!: string;
     public role!: string;
-
+ 
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 
@@ -35,7 +35,6 @@ class StaffRole extends Model<StaffRoleAttributes> implements StaffRoleAttribute
 StaffRole.init({
     staffAccountId: {
         type: DataTypes.UUID,
-        defaultValue: UUIDV4,
         primaryKey: true,
         references: {
             model: "staff_accounts",

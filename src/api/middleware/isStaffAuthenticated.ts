@@ -50,7 +50,7 @@ export const isStaffAuthenticated = async (
       include: [{ model: StaffAccount, as: 'staffAccount' }],
     });
 
-    console.log("staffrole", staffRole)
+    // console.log("staffrole", staffRole)
     const staffRoleData = staffRole?.toJSON() as any
 
     // 4. Check if the membership role exists

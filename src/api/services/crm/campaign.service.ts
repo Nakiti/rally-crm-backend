@@ -4,6 +4,8 @@ import { removeUndefinedProps } from '../../../utils/removeUndefined.js';
 import { CrmCampaignRepository, type CampaignWithStats } from '../../repositories/crm/campaign.repository.js';
 import type { StaffSession } from '../../types/session.types.js';
 import type { CampaignCreationAttributes } from '../../../models/campaign.model.js';
+import { campaignSectionValidation } from '../../../config/campaignSectionValidation.config.js';
+import sequelize from '../../../config/database.js';
 
 interface CreateCampaignData {
   defaultDesignationId?: string;
@@ -152,14 +154,30 @@ export const updateCampaignForStaff = async (
   updateData: UpdateCampaignData,
   staffSession: StaffSession
 ): Promise<Campaign> => {
+  // Start a transaction
+  const transaction = await sequelize.transaction();
+
   try {
     // Create repository instance with staff session for authorization
     const campaignRepo = new CrmCampaignRepository(staffSession);
+
+    // Find all image URLs that are actually being used in the saved content
+    const usedImageUrls = extractImageUrls(updateData.pageConfig || {});
+
+    // Confirm the images using the repository
+    await campaignRepo.confirmImages(usedImageUrls, transaction);
+
+    // Update the campaign using the repository with transaction
+    const updatedCampaign = await campaignRepo.update(id, updateData, transaction);
     
-    // Use repository to update campaign (includes authorization check)
-    const campaign = await campaignRepo.update(id, updateData);
-    return campaign;
+    // Commit the transaction
+    await transaction.commit();
+
+    return updatedCampaign;
   } catch (error) {
+    // Rollback on failure
+    await transaction.rollback();
+    
     if (error instanceof ApiError) {
       throw error;
     }
@@ -302,4 +320,147 @@ export const getCampaignByIdWithQuestionsForStaff = async (
     }
     throw new ApiError(500, 'Failed to fetch campaign with questions');
   }
+};
+
+/**
+ * Get top-performing campaigns for the organization
+ * @param staffSession - The authenticated staff session
+ * @param period - Time period: 'week', 'month', or 'year'
+ * @param limit - Maximum number of campaigns to return (default: 3)
+ */
+export const getTopCampaigns = async (
+  staffSession: StaffSession,
+  period: 'week' | 'month' | 'year' = 'month',
+  limit: number = 3
+): Promise<Array<{
+  id: string;
+  name: string;
+  raised: number;
+  goal: number | null;
+  donors: number;
+}>> => {
+  try {
+    // Validate period parameter
+    if (!['week', 'month', 'year'].includes(period)) {
+      throw new ApiError(400, 'Invalid period. Must be one of: week, month, year');
+    }
+
+    // Validate limit parameter
+    if (limit < 1 || limit > 20) {
+      throw new ApiError(400, 'Limit must be between 1 and 20');
+    }
+
+    // Create repository instance with staff session for authorization
+    const campaignRepo = new CrmCampaignRepository(staffSession);
+    
+    // Call repository method
+    const topCampaigns = await campaignRepo.findTopCampaigns(period, limit);
+    
+    return topCampaigns;
+  } catch (error) {
+    console.log(error)
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, 'Failed to fetch top campaigns');
+  }
+};
+
+/**
+ * Publish a campaign with validation and transaction support
+ * @param id - The campaign ID
+ * @param pageConfig - The updated page configuration
+ * @param staffSession - The authenticated staff session
+ */
+export const publishCampaign = async (
+  id: string,
+  pageConfig: object,
+  staffSession: StaffSession
+): Promise<Campaign> => {
+  // Start a transaction
+  const transaction = await sequelize.transaction();
+  
+  try {
+    // Create repository instance with staff session for authorization
+    const campaignRepo = new CrmCampaignRepository(staffSession);
+    
+    // Fetch the campaign to ensure the user is authorized to edit it
+    const campaign = await campaignRepo.findById(id);
+    
+    if (!campaign) {
+      throw new ApiError(404, 'Campaign not found');
+    }
+
+    // Perform server-side validation on the pageConfig
+    const pageConfigObj = pageConfig as Record<string, any>;
+    const enabledSections = Object.keys(pageConfigObj).filter(
+      sectionKey => pageConfigObj[sectionKey]?.enabled === true
+    );
+
+    // Loop through enabled sections and validate required fields
+    for (const sectionKey of enabledSections) {
+      const sectionConfig = pageConfigObj[sectionKey];
+      const validationRules = campaignSectionValidation[sectionKey as keyof typeof campaignSectionValidation];
+      
+      if (validationRules && validationRules.requiredFields.length > 0) {
+        // Check if all required fields have non-empty values
+        for (const requiredField of validationRules.requiredFields) {
+          const fieldValue = sectionConfig?.props?.[requiredField];
+          
+          if (!fieldValue || (typeof fieldValue === 'string' && fieldValue.trim() === '')) {
+            // Capitalize the first letter of the section name for better error message
+            const sectionName = sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1);
+            throw new ApiError(400, `Cannot publish: The ${sectionName} section is missing a ${requiredField}.`);
+          }
+        }
+      }
+    }
+
+    // Find all image URLs that are actually being used in the published content
+    const usedImageUrls = extractImageUrls(pageConfig);
+
+    // Confirm the images using the repository
+    await campaignRepo.confirmImages(usedImageUrls, transaction);
+
+    // Update the campaign with the new pageConfig and set is_active: true using the repository
+    const updatedCampaign = await campaignRepo.update(id, {
+      pageConfig,
+      isActive: true
+    }, transaction);
+
+    // Commit the transaction
+    await transaction.commit();
+    
+    return updatedCampaign;
+  } catch (error) {
+    // Rollback the transaction in case of any error
+    await transaction.rollback();
+    
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, 'Failed to publish campaign');
+  }
+};
+
+//helper
+const extractImageUrls = (config: object): string[] => {
+  const urls: string[] = [];
+  const azureBaseUrl = process.env.AZURE_STORAGE_BASE_URL;
+  
+  if (!azureBaseUrl) {
+    return urls; // Return empty array if no base URL is configured
+  }
+  
+  const findUrls = (obj: any) => {
+    for (const key in obj) {
+      if (typeof obj[key] === 'string' && obj[key].startsWith(azureBaseUrl)) {
+        urls.push(obj[key]);
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        findUrls(obj[key]);
+      }
+    }
+  };
+  findUrls(config);
+  return urls;
 };

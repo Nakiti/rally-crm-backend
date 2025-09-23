@@ -5,6 +5,8 @@ import { CrmOrganizationPageRepository } from '../../repositories/crm/organizati
 import type { StaffSession } from '../../types/session.types.js';
 import { websitePageEditorConfig } from '../../../config/websitePageEditor.config.js';
 import { websiteSectionDefaults } from '../../../config/websiteSectionDefaults.config.js';
+import sequelize from '../../../config/database.js';
+import { OrganizationCompletenessService } from './organizationCompleteness.service.js';
 
 interface CreateOrganizationPageData {
   pageType: string;
@@ -133,14 +135,40 @@ export const updateOrganizationPageForStaff = async (
   updateData: UpdateOrganizationPageData,
   staffSession: StaffSession
 ): Promise<OrganizationPage> => {
+  // Start a transaction
+  const transaction = await sequelize.transaction();
+
   try {
     // Create repository instance with staff session for authorization
     const pageRepo = new CrmOrganizationPageRepository(staffSession);
+
+    // Find all image URLs that are actually being used in the saved content
+    const usedImageUrls = extractImageUrls(updateData.contentConfig || {});
+
+    // Confirm the images using the repository
+    await pageRepo.confirmImages(usedImageUrls, transaction);
+
+    // Update the organization page using the repository with transaction
+    const updatedPage = await pageRepo.update(id, updateData, transaction);
     
-    // Use repository to update organization page (includes authorization check)
-    const page = await pageRepo.update(id, updateData);
-    return page;
+    // Commit the transaction
+    await transaction.commit();
+
+    // Trigger organization completeness check if isPublished status changed
+    if (updateData.isPublished !== undefined && staffSession.organizationId) {
+      try {
+        await OrganizationCompletenessService.checkAndSetOrganizationPublicStatus(staffSession.organizationId);
+      } catch (completenessError) {
+        // Log the error but don't fail the page update
+        console.error('Failed to check organization completeness after page update:', completenessError);
+      }
+    }
+
+    return updatedPage;
   } catch (error) {
+    // Rollback on failure
+    await transaction.rollback();
+    
     if (error instanceof ApiError) {
       throw error;
     }
@@ -211,14 +239,30 @@ export const updateOrganizationPageContentConfig = async (
   contentConfig: object,
   staffSession: StaffSession
 ): Promise<OrganizationPage> => {
+  // Start a transaction
+  const transaction = await sequelize.transaction();
+
   try {
     // Create repository instance with staff session for authorization
     const pageRepo = new CrmOrganizationPageRepository(staffSession);
+
+    // Find all image URLs that are actually being used in the saved content
+    const usedImageUrls = extractImageUrls(contentConfig);
+
+    // Confirm the images using the repository
+    await pageRepo.confirmImages(usedImageUrls, transaction);
+
+    // Update only the contentConfig using the repository with transaction
+    const updatedPage = await pageRepo.update(id, { contentConfig }, transaction);
     
-    // Use repository to update only the contentConfig (includes authorization check)
-    const page = await pageRepo.update(id, { contentConfig });
-    return page;
+    // Commit the transaction
+    await transaction.commit();
+
+    return updatedPage;
   } catch (error) {
+    // Rollback on failure
+    await transaction.rollback();
+    
     if (error instanceof ApiError) {
       throw error;
     }
@@ -237,6 +281,9 @@ export const publishOrganizationPage = async (
   contentConfig: object,
   staffSession: StaffSession
 ): Promise<OrganizationPage> => {
+  // Start a transaction
+  const transaction = await sequelize.transaction();
+
   try {
     // Create repository instance with staff session for authorization
     const pageRepo = new CrmOrganizationPageRepository(staffSession);
@@ -247,15 +294,37 @@ export const publishOrganizationPage = async (
     if (!page) {
       throw new ApiError(404, 'Organization page not found');
     }
+
+    // Find all image URLs that are actually being used in the published content
+    const usedImageUrls = extractImageUrls(contentConfig);
+
+    // Confirm the images using the repository
+    await pageRepo.confirmImages(usedImageUrls, transaction);
     
-    // Update both contentConfig and set isPublished to true
+    // Update both contentConfig and set isPublished to true using the repository with transaction
     const updatedPage = await pageRepo.update(page.id, { 
       contentConfig,
       isPublished: true 
-    });
+    }, transaction);
+    
+    // Commit the transaction
+    await transaction.commit();
+
+    // Trigger organization completeness check after publishing page
+    if (staffSession.organizationId) {
+      try {
+        await OrganizationCompletenessService.checkAndSetOrganizationPublicStatus(staffSession.organizationId);
+      } catch (completenessError) {
+        // Log the error but don't fail the page publish
+        console.error('Failed to check organization completeness after page publish:', completenessError);
+      }
+    }
     
     return updatedPage;
   } catch (error) {
+    // Rollback on failure
+    await transaction.rollback();
+    
     if (error instanceof ApiError) {
       throw error;
     }
@@ -312,4 +381,26 @@ export const createDefaultOrganizationPages = async (organizationId: string): Pr
     }
     throw new ApiError(500, 'Failed to create default organization pages');
   }
+};
+
+// Helper function to extract image URLs from content configuration
+const extractImageUrls = (config: object): string[] => {
+  const urls: string[] = [];
+  const azureBaseUrl = process.env.AZURE_STORAGE_BASE_URL;
+  
+  if (!azureBaseUrl) {
+    return urls; // Return empty array if no base URL is configured
+  }
+  
+  const findUrls = (obj: any) => {
+    for (const key in obj) {
+      if (typeof obj[key] === 'string' && obj[key].startsWith(azureBaseUrl)) {
+        urls.push(obj[key]);
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        findUrls(obj[key]);
+      }
+    }
+  };
+  findUrls(config);
+  return urls;
 };

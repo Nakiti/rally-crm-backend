@@ -1,7 +1,8 @@
 import { Campaign, Donation, Designation, CampaignAvailableDesignation, CampaignQuestion } from '../../../models/index.js';
+import { ImageUpload } from '../../../models/imageUpload.model.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import type { StaffSession } from '../../types/session.types.js';
-import { Op, fn, col, literal } from 'sequelize';
+import { Op, fn, col, literal, Transaction } from 'sequelize';
 
 // Interface for campaign with donation statistics
 export interface CampaignWithStats {
@@ -213,6 +214,7 @@ export class CrmCampaignRepository {
    * Must first find the campaign using both id and organizationId to ensure the user has permission to edit it.
    * @param id - The campaign ID
    * @param updateData - The data to update
+   * @param transaction - Optional transaction to use for the operation
    */
   public async update(id: string, updateData: {
     defaultDesignationId?: string;
@@ -223,7 +225,7 @@ export class CrmCampaignRepository {
     icon?: string;
     pageConfig?: object;
     isActive?: boolean;
-  }): Promise<Campaign> {
+  }, transaction?: Transaction): Promise<Campaign> {
     // Check if the repository was initialized with a user context
     if (!this.user || !this.user.organizationId) {
       throw new ApiError(500, 'Repository must be initialized with a user context for this operation.');
@@ -231,12 +233,18 @@ export class CrmCampaignRepository {
 
     try {
       // Find the campaign using both id and organizationId to ensure permission
-      const campaign = await Campaign.findOne({
+      const findOptions: any = {
         where: {
           id,
           organizationId: this.user.organizationId
         }
-      });
+      };
+      
+      if (transaction) {
+        findOptions.transaction = transaction;
+      }
+      
+      const campaign = await Campaign.findOne(findOptions);
 
       if (!campaign) {
         throw new ApiError(404, 'Campaign not found or access denied.');
@@ -244,13 +252,19 @@ export class CrmCampaignRepository {
 
       // If slug is being updated, check for uniqueness within the organization
       if (updateData.slug && updateData.slug !== campaign.slug) {
-        const existingCampaign = await Campaign.findOne({
+        const existingFindOptions: any = {
           where: {
             slug: updateData.slug,
             organizationId: this.user.organizationId,
             id: { [Op.ne]: id }
           }
-        });
+        };
+        
+        if (transaction) {
+          existingFindOptions.transaction = transaction;
+        }
+        
+        const existingCampaign = await Campaign.findOne(existingFindOptions);
 
         if (existingCampaign) {
           throw new ApiError(409, 'A campaign with this slug already exists in your organization.');
@@ -258,7 +272,11 @@ export class CrmCampaignRepository {
       }
 
       // Update the campaign
-      await campaign.update(updateData);
+      const updateOptions: any = {};
+      if (transaction) {
+        updateOptions.transaction = transaction;
+      }
+      await campaign.update(updateData, updateOptions);
       return campaign;
     } catch (error: any) {
       if (error instanceof ApiError) {
@@ -379,6 +397,144 @@ export class CrmCampaignRepository {
     } catch (error) {
       console.log(error)
       throw new ApiError(500, 'Failed to fetch campaign with questions from database.');
+    }
+  }
+
+  /**
+   * Fetches top-performing campaigns based on donations within a time period
+   * @param period - Time period: 'week', 'month', or 'year'
+   * @param limit - Maximum number of campaigns to return (default: 3)
+   * @returns Array of top campaigns with performance metrics
+   */
+  public async findTopCampaigns(period: 'week' | 'month' | 'year', limit: number = 3): Promise<Array<{
+    id: string;
+    name: string;
+    raised: number;
+    goal: number | null;
+    donors: number;
+  }>> {
+    // Check if the repository was initialized with a user context
+    if (!this.user || !this.user.organizationId) {
+      throw new ApiError(500, 'Repository must be initialized with a user context for this operation.');
+    }
+
+    try {
+      const dateRange = this.getDateRange(period);
+      
+      const campaigns = await Campaign.findAll({
+        where: {
+          organizationId: this.user.organizationId,
+          isActive: true // Only include active campaigns
+        },
+        attributes: [
+          'id',
+          'externalName',
+          'internalName',
+          'goalAmount',
+          [
+            literal(`(
+              SELECT COALESCE(SUM(d.amount), 0)
+              FROM donations d
+              WHERE d.campaign_id = \`Campaign\`.\`id\`
+              AND d.organization_id = \`Campaign\`.\`organization_id\`
+              AND d.status = 'completed'
+              AND d.created_at >= '${dateRange.start.toISOString()}'
+              AND d.created_at <= '${dateRange.end.toISOString()}'
+            )`),
+            'raised'
+          ],
+          [
+            literal(`(
+              SELECT COUNT(DISTINCT d.donor_account_id)
+              FROM donations d
+              WHERE d.campaign_id = \`Campaign\`.\`id\`
+              AND d.organization_id = \`Campaign\`.\`organization_id\`
+              AND d.status = 'completed'
+              AND d.created_at >= '${dateRange.start.toISOString()}'
+              AND d.created_at <= '${dateRange.end.toISOString()}'
+            )`),
+            'donors'
+          ]
+        ],
+        order: [
+          [literal('raised'), 'DESC']
+        ],
+        limit: limit,
+        raw: true
+      });
+
+      // Transform the results to match the expected format
+      return campaigns.map((campaign: any) => ({
+        id: campaign.id,
+        name: campaign.externalName || campaign.internalName,
+        raised: Math.round(parseFloat(campaign.raised)),
+        goal: campaign.goalAmount ? Math.round(campaign.goalAmount) : null,
+        donors: parseInt(campaign.donors)
+      }));
+    } catch (error) {
+      console.log(error)
+      throw new ApiError(500, 'Failed to fetch top campaigns from database.');
+    }
+  }
+
+  /**
+   * Get date range based on period
+   */
+  private getDateRange(period: 'week' | 'month' | 'year'): { start: Date, end: Date } {
+    const now = new Date();
+    let start: Date;
+
+    switch (period) {
+      case 'week':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+        break;
+      case 'month':
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'year':
+        start = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        throw new Error(`Invalid period: ${period}`);
+    }
+
+    return { start, end: now };
+  }
+
+  /**
+   * Confirms image uploads by updating their status from 'pending' to 'confirmed'.
+   * This prevents the cleanup job from deleting these images.
+   * @param imageUrls - Array of image URLs to confirm
+   * @param transaction - Optional transaction to use for the operation
+   */
+  public async confirmImages(imageUrls: string[], transaction?: Transaction): Promise<void> {
+    // Check if the repository was initialized with a user context
+    if (!this.user || !this.user.organizationId) {
+      throw new ApiError(500, 'Repository must be initialized with a user context for this operation.');
+    }
+
+    if (imageUrls.length === 0) {
+      return; // No images to confirm
+    }
+
+    try {
+      const imageUpdateOptions: any = {
+        where: {
+          url: imageUrls,
+          organizationId: this.user.organizationId,
+        }
+      };
+      
+      if (transaction) {
+        imageUpdateOptions.transaction = transaction;
+      }
+      
+      await ImageUpload.update(
+        { status: 'confirmed' },
+        imageUpdateOptions
+      );
+    } catch (error) {
+      throw new ApiError(500, 'Failed to confirm images in database.');
     }
   }
 }

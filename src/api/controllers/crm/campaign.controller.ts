@@ -8,7 +8,9 @@ import {
   getCampaignPageConfig as getCampaignPageConfigService,
   updateCampaignPageConfig as updateCampaignPageConfigService,
   getCampaignByIdWithDesignationsForStaff,
-  getCampaignByIdWithQuestionsForStaff
+  getCampaignByIdWithQuestionsForStaff,
+  publishCampaign as publishCampaignService,
+  getTopCampaigns
 } from '../../services/crm/campaign.service.js';
 import { updateCampaignDesignations as updateCampaignDesignationsService } from '../../services/crm/campaignAvailableDesignation.service.js';
 import { updateCampaignQuestions as updateCampaignQuestionsService } from '../../services/crm/campaignQuestion.service.js';
@@ -348,6 +350,78 @@ export const updateCampaignQuestions = async (
       success: true,
       data: result,
       message: `Campaign questions updated successfully. Added: ${result.added}, Updated: ${result.updated}, Removed: ${result.removed}, Total: ${result.total}`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get top-performing campaigns for the organization
+ * GET /api/crm/campaigns/top
+ */
+export const getTopCampaignsController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const staffSession = (req as AuthenticatedRequest).user as StaffSession;
+    
+    // Parse query parameters
+    const period = (req.query.period as 'week' | 'month' | 'year') || 'month';
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 3;
+
+    // Validate period parameter
+    if (!['week', 'month', 'year'].includes(period)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid period parameter. Must be one of: week, month, year'
+      });
+      return;
+    }
+
+    // Validate limit parameter
+    if (isNaN(limit) || limit < 1 || limit > 20) {
+      res.status(400).json({
+        success: false,
+        message: 'Limit must be a number between 1 and 20'
+      });
+      return;
+    }
+
+    const topCampaigns = await getTopCampaigns(staffSession, period, limit);
+    
+    res.status(200).json(topCampaigns);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Publish a campaign
+ * PATCH /api/crm/campaigns/:id/publish
+ */
+export const publishCampaign = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { pageConfig } = req.body;
+    const staffSession = (req as AuthenticatedRequest).user as StaffSession;
+    
+    if (!id) {
+      throw new ApiError(400, 'Campaign ID is required');
+    }
+
+    const campaign = await publishCampaignService(id, pageConfig, staffSession);
+    
+    res.status(200).json({
+      success: true,
+      data: campaign,
+      message: 'Campaign published successfully'
     });
   } catch (error) {
     next(error);

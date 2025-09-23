@@ -39,7 +39,6 @@ StaffAccount.init({
     email: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        unique: true
     },
     passwordHash: {
         type: DataTypes.STRING,
@@ -48,7 +47,14 @@ StaffAccount.init({
 }, {
     tableName: "staff_accounts",
     sequelize,
-    underscored: true
+    underscored: true,
+    indexes: [
+        {
+        unique: true,
+        fields: ['email'],
+        name: 'unique_email'
+        }
+    ]
 })
 
 export {StaffAccount}

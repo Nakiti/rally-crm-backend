@@ -10,7 +10,9 @@ import {
   updateCampaignDesignations,
   getCampaignWithDesignations,
   getCampaignWithQuestions,
-  updateCampaignQuestions
+  updateCampaignQuestions,
+  publishCampaign,
+  getTopCampaignsController
 } from '../../controllers/crm/campaign.controller.js';
 import { validate } from '../../middleware/validate.js';
 import { isStaffAuthenticated } from '../../middleware/isStaffAuthenticated.js';
@@ -24,6 +26,8 @@ import {
   getPageConfigSchema,
   updateCampaignDesignationsSchema,
   updateCampaignQuestionsSchema,
+  publishCampaignSchema,
+  getTopCampaignsSchema
 } from './campaign.schemas.js';
 import campaignQuestionRoutes from './campaignQuestion.routes.js';
 import campaignAvailableDesignationRoutes from './campaignAvailableDesignation.routes.js';
@@ -46,6 +50,13 @@ router.post('/', hasRole(['admin', 'editor']), validate(createCampaignSchema), c
  * @access  Private (Admin, Editor)
  */
 router.get('/', hasRole(['admin', 'editor']), getCampaigns);
+
+/**
+ * @route   GET /api/crm/campaigns/top
+ * @desc    Get top-performing campaigns for the organization
+ * @access  Private (Admin, Editor)
+ */
+router.get('/top', hasRole(['admin', 'editor']), validate(getTopCampaignsSchema), getTopCampaignsController);
 
 /**
  * @route   GET /api/crm/campaigns/:id
@@ -122,7 +133,14 @@ router.patch('/:id/questions', hasRole(['admin', 'editor']), validate(updateCamp
  * @route   Nested routes for campaign available designations
  * @desc    Mount campaign available designation routes under /:id/available-designations
  * @access  Private (Admin, Editor)
- */
+ */ 
 router.use('/:id/available-designations', campaignAvailableDesignationRoutes);
+
+/**
+ * @route   PATCH /api/crm/campaigns/:id/publish
+ * @desc    Publish a campaign with validation
+ * @access  Private (Admin, Editor)
+ */
+router.patch('/:id/publish', hasRole(['admin', 'editor']), validate(publishCampaignSchema), publishCampaign);
 
 export default router;

@@ -1,7 +1,8 @@
 import { OrganizationPage } from '../../../models/index.js';
+import { ImageUpload } from '../../../models/imageUpload.model.js';
 import { ApiError } from '../../../utils/ApiError.js';
 import type { StaffSession } from '../../types/session.types.js';
-import { Op } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 
 /**
  * A repository for handling all database operations for OrganizationPages
@@ -128,12 +129,13 @@ export class CrmOrganizationPageRepository {
    * Must first find the page using both id and organizationId to ensure the user has permission to edit it.
    * @param id - The organization page ID
    * @param updateData - The data to update
+   * @param transaction - Optional transaction to use for the operation
    */
   public async update(id: string, updateData: {
     pageType?: string;
     contentConfig?: object;
     isPublished?: boolean;
-  }): Promise<OrganizationPage> {
+  }, transaction?: Transaction): Promise<OrganizationPage> {
     // Check if the repository was initialized with a user context
     if (!this.user || !this.user.organizationId) {
       throw new ApiError(500, 'Repository must be initialized with a user context for this operation.');
@@ -141,12 +143,18 @@ export class CrmOrganizationPageRepository {
 
     try {
       // Find the organization page using both id and organizationId to ensure permission
-      const page = await OrganizationPage.findOne({
+      const findOptions: any = {
         where: {
           id,
           organizationId: this.user.organizationId
         }
-      });
+      };
+      
+      if (transaction) {
+        findOptions.transaction = transaction;
+      }
+      
+      const page = await OrganizationPage.findOne(findOptions);
 
       if (!page) {
         throw new ApiError(404, 'Organization page not found or access denied.');
@@ -154,13 +162,19 @@ export class CrmOrganizationPageRepository {
 
       // If pageType is being updated, check for uniqueness within the organization
       if (updateData.pageType && updateData.pageType !== page.pageType) {
-        const existingPage = await OrganizationPage.findOne({
+        const existingFindOptions: any = {
           where: {
             pageType: updateData.pageType,
             organizationId: this.user.organizationId,
             id: { [Op.ne]: id }
           }
-        });
+        };
+        
+        if (transaction) {
+          existingFindOptions.transaction = transaction;
+        }
+        
+        const existingPage = await OrganizationPage.findOne(existingFindOptions);
 
         if (existingPage) {
           throw new ApiError(409, 'An organization page of this type already exists in your organization.');
@@ -168,7 +182,11 @@ export class CrmOrganizationPageRepository {
       }
 
       // Update the organization page
-      await page.update(updateData);
+      const updateOptions: any = {};
+      if (transaction) {
+        updateOptions.transaction = transaction;
+      }
+      await page.update(updateData, updateOptions);
       return page;
     } catch (error: any) {
       if (error instanceof ApiError) {
@@ -212,6 +230,43 @@ export class CrmOrganizationPageRepository {
         throw error;
       }
       throw new ApiError(500, 'Failed to delete organization page from database.');
+    }
+  }
+
+  /**
+   * Confirms image uploads by updating their status from 'pending' to 'confirmed'.
+   * This prevents the cleanup job from deleting these images.
+   * @param imageUrls - Array of image URLs to confirm
+   * @param transaction - Optional transaction to use for the operation
+   */
+  public async confirmImages(imageUrls: string[], transaction?: Transaction): Promise<void> {
+    // Check if the repository was initialized with a user context
+    if (!this.user || !this.user.organizationId) {
+      throw new ApiError(500, 'Repository must be initialized with a user context for this operation.');
+    }
+
+    if (imageUrls.length === 0) {
+      return; // No images to confirm
+    }
+
+    try {
+      const imageUpdateOptions: any = {
+        where: {
+          url: imageUrls,
+          organizationId: this.user.organizationId,
+        }
+      };
+      
+      if (transaction) {
+        imageUpdateOptions.transaction = transaction;
+      }
+      
+      await ImageUpload.update(
+        { status: 'confirmed' },
+        imageUpdateOptions
+      );
+    } catch (error) {
+      throw new ApiError(500, 'Failed to confirm images in database.');
     }
   }
 }

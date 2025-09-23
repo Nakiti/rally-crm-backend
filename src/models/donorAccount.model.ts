@@ -49,7 +49,6 @@ DonorAccount.init({
     email: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        unique: true
     },
     passwordHash: {
         type: DataTypes.STRING,
@@ -58,7 +57,14 @@ DonorAccount.init({
 }, {
     tableName: "donor_accounts",
     sequelize,
-    underscored: true
+    underscored: true,
+    indexes: [
+        {
+            unique: true,
+            fields: ['email'],
+            name: 'unique_email'
+        }
+    ]
 })
 
 export {DonorAccount}

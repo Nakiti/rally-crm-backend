@@ -85,7 +85,6 @@ Donation.init({
     stripeChargeId: {
         type: DataTypes.STRING(255),
         allowNull: true,
-        unique: true
     },
     status: {
         type: DataTypes.ENUM('pending', 'completed', 'failed'),
@@ -94,7 +93,14 @@ Donation.init({
 }, {
     tableName: "donations",
     sequelize,
-    underscored: true
+    underscored: true,
+    indexes: [
+        {
+        unique: true,
+        fields: ['stripe_charge_id'],
+        name: 'unique_stripe_charge_id'
+        }
+    ]
 })
 
 export {Donation}

@@ -172,6 +172,43 @@ export class CrmDonationService {
   }
 
   /**
+   * Gets recent donations for the organization
+   * @param staffSession - The authenticated staff session
+   * @param limit - Maximum number of donations to return (default: 5)
+   * @returns Array of recent donations with basic details
+   */
+  public async getRecentDonations(
+    staffSession: StaffSession,
+    limit: number = 5
+  ): Promise<Array<{
+    id: string;
+    donorName: string;
+    campaignName: string;
+    amount: number;
+    donatedAt: Date;
+  }>> {
+    try {
+      // Validate limit parameter
+      if (limit < 1 || limit > 50) {
+        throw new ApiError(400, 'Limit must be between 1 and 50');
+      }
+
+      // Instantiate the repository with staff session
+      const donationRepo = new CrmDonationRepository(staffSession);
+      
+      // Call repository method
+      const recentDonations = await donationRepo.findRecentForOrg(limit);
+      
+      return recentDonations;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(500, 'Failed to fetch recent donations');
+    }
+  }
+
+  /**
    * Gets detailed information about a specific donation
    * @param staffSession - The authenticated staff session
    * @param donationId - The ID of the donation to retrieve
