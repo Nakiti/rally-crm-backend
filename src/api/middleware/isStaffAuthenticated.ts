@@ -23,6 +23,8 @@ export const isStaffAuthenticated = async (
 ): Promise<void> => {
   try {
     // 1. Check for and extract the token
+    console.log("AUTH CHECK =========")
+    console.log("Token: ", req.cookies.auth_token)
     const token = req.cookies.auth_token;
 
     if (!token) {

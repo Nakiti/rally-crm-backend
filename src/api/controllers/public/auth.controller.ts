@@ -8,13 +8,12 @@ import { ApiError } from '../../../utils/ApiError.js';
 
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const, // Or 'strict'
-  maxAge: 24 * 60 * 60 * 1000, // 1 day
-  path: '/', // Crucial: make it available site-wide
-  // Domain is intentionally omitted for better reliability in development
+  secure: true,
+  sameSite: 'none', 
+  maxAge: 24 * 60 * 60 * 1000,
+  path: '/',
+  domain: '.localhost',
 };
-
 /**
  * Sign up a new organization with the first admin user
  * POST /api/public/auth/signup
